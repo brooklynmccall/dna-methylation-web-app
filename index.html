@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MethylScript — Piccolo Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"></script>
+  <style>
+/* ── Tokens ── */
+:root {
+  --bg:             #F2F1ED;
+  --surface:        #FFFFFF;
+  --surface-alt:    #F8F7F4;
+  --border:         #E0DDD7;
+  --border-subtle:  #ECEAE6;
+  --text:           #1A1A1C;
+  --text-2:         #5C6370;
+  --text-3:         #9099A3;
+  --accent:         #1B6B8A;
+  --accent-hover:   #155878;
+  --accent-subtle:  #E4F1F6;
+  --accent-text:    #0E4760;
+  --success:        #1A7A4A;
+  --error:          #C0392B;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             #0E1217;
+    --surface:        #161C23;
+    --surface-alt:    #1A2230;
+    --border:         #252D38;
+    --border-subtle:  #1E2833;
+    --text:           #EEF0F3;
+    --text-2:         #8A9BAD;
+    --text-3:         #4E5E6E;
+    --accent:         #3A9DBF;
+    --accent-hover:   #2F8AAF;
+    --accent-subtle:  #0D2535;
+    --accent-text:    #7ECDE8;
+    --success:        #2ECC71;
+    --error:          #E74C3C;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             #0E1217;
+  --surface:        #161C23;
+  --surface-alt:    #1A2230;
+  --border:         #252D38;
+  --border-subtle:  #1E2833;
+  --text:           #EEF0F3;
+  --text-2:         #8A9BAD;
+  --text-3:         #4E5E6E;
+  --accent:         #3A9DBF;
+  --accent-hover:   #2F8AAF;
+  --accent-subtle:  #0D2535;
+  --accent-text:    #7ECDE8;
+  --success:        #2ECC71;
+  --error:          #E74C3C;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 28px 24px 80px;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+header {
+  max-width: 680px;
+  margin: 0 auto 64px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-icon svg { display: block; }
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.logo-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.logo-org {
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.header-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.05em;
+  padding-top: 2px;
+}
+
+/* ── Main container ── */
+main {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ── Input Stage ── */
+#input-stage {
+  text-align: center;
+  padding-bottom: 8px;
+  transition: opacity 0.3s ease;
+}
+
+#input-stage.locked {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+
+.hero-heading {
+  font-size: clamp(26px, 5vw, 38px);
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 12px;
+  text-wrap: balance;
+}
+
+.hero-heading strong { font-weight: 600; }
+
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 40px;
+  text-wrap: balance;
+}
+
+.id-widget {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-align: left;
+}
+
+.id-widget:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.id-prefix {
+  padding: 0 4px 0 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 19px;
+  color: var(--text-3);
+  user-select: none;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+#series-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--text);
+  padding: 18px 8px;
+  letter-spacing: 0.03em;
+  caret-color: var(--accent);
+  min-width: 0;
+}
+
+#series-input::placeholder { color: var(--border); font-weight: 400; }
+
+.id-submit {
+  margin: 6px;
+  padding: 10px 22px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.id-submit:hover  { background: var(--accent-hover); }
+.id-submit:active { transform: scale(0.97); }
+.id-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.id-hint {
+  margin-top: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.id-error {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--error);
+  display: none;
+}
+
+/* ── Shared reveal animation ── */
+.reveal-section {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.38s ease, transform 0.38s ease;
+  display: none;
+}
+
+.reveal-section.show    { display: block; }
+.reveal-section.visible { opacity: 1; transform: translateY(0); }
+
+.section-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 36px 0;
+}
+
+/* ── Chat Stage ── */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.chat-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.chat-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.chat-label span { color: var(--accent); }
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.msg-row { display: flex; }
+.msg-row.system { justify-content: flex-start; }
+.msg-row.user   { justify-content: flex-end; }
+
+.msg-bubble {
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.58;
+  max-width: 80%;
+}
+
+.msg-row.system .msg-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px 14px 14px 14px;
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.msg-row.user .msg-bubble {
+  background: var(--accent-subtle);
+  border-radius: 14px 3px 14px 14px;
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.msg-bubble strong { font-weight: 600; }
+.msg-bubble em     { font-style: italic; color: var(--text-2); }
+
+.msg-bubble code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  background: rgba(0,0,0,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.msg-row.user .msg-bubble code { background: rgba(0,0,0,0.12); }
+
+.typing-row { display: flex; }
+
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px 14px 14px 14px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+  animation: bounce 1.3s ease infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.17s; }
+.typing-dot:nth-child(3) { animation-delay: 0.34s; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+#chat-textarea {
+  flex: 1;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  outline: none;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.45;
+  transition: border-color 0.15s;
+}
+
+#chat-textarea:focus { border-color: var(--accent); }
+#chat-textarea::placeholder { color: var(--text-3); }
+#chat-textarea:disabled { opacity: 0.5; }
+
+.chat-send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.chat-send-btn:hover  { background: var(--accent-hover); }
+.chat-send-btn:active { transform: scale(0.95); }
+.chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── Progress Stage ── */
+.progress-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.progress-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+#progress-pct {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  transition: opacity 0.3s;
+}
+
+.progress-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.p-step {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 14px;
+  color: var(--text-3);
+  transition: color 0.3s;
+}
+
+.p-step.active { color: var(--text); }
+.p-step.done   { color: var(--text-2); }
+
+.p-step-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: border-color 0.3s, background 0.3s, color 0.3s, box-shadow 0.3s;
+}
+
+.p-step.active .p-step-icon {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.p-step.done .p-step-icon {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Output Stage ── */
+.output-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.output-meta-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.output-meta-detail {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.03em;
+}
+
+.output-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.btn-icon:active { transform: scale(0.96); }
+
+.btn-copy {
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+
+.btn-copy:hover { color: var(--accent); border-color: var(--accent); }
+.btn-copy.copied { color: var(--success); border-color: var(--success); }
+
+.btn-save { background: var(--accent); color: #fff; }
+.btn-save:hover { background: var(--accent-hover); }
+
+.code-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #21262D;
+}
+
+.code-wrap pre {
+  margin: 0;
+  background: #0D1117;
+  overflow-x: auto;
+  padding: 24px;
+}
+
+.code-wrap pre code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  display: block;
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* highlight.js tokens */
+.hljs                  { background: transparent; color: #e6edf3; }
+.hljs-comment          { color: #6e7681; font-style: italic; }
+.hljs-string           { color: #a5d6ff; }
+.hljs-number           { color: #79c0ff; }
+.hljs-keyword          { color: #ff7b72; }
+.hljs-built_in         { color: #ffa657; }
+.hljs-title.function_  { color: #d2a8ff; }
+.hljs-params           { color: #e6edf3; }
+.hljs-operator         { color: #ff7b72; }
+.hljs-punctuation      { color: #8b949e; }
+.hljs-literal          { color: #79c0ff; }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  body { padding: 20px 16px 60px; }
+  header { margin-bottom: 40px; }
+  .hero-heading { font-size: 24px; }
+  #series-input, .id-prefix { font-size: 16px; }
+  .id-submit { padding: 10px 16px; }
+  .msg-bubble { max-width: 94%; }
+  .output-top { flex-direction: column; }
+  .output-actions { width: 100%; }
+  .btn-icon { flex: 1; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-section, .progress-bar, .p-step, .p-step-icon { transition: none; }
+  .chat-pulse, .typing-dot { animation: none; opacity: 1; transform: none; }
+}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="8" width="4" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+        <rect x="7" y="4" width="4" height="12" rx="1" fill="rgba(255,255,255,0.75)"/>
+        <rect x="12" y="2" width="4" height="14" rx="1" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="logo-name">MethylScript</span>
+      <span class="logo-org">Piccolo Lab · BYU</span>
+    </div>
+  </div>
+  <span class="header-tag">450K / EPIC</span>
+</header>
+
+<main>
+  <!-- Stage 1: Series ID -->
+  <section id="input-stage">
+    <p class="eyebrow">GEO Series ID</p>
+    <h1 class="hero-heading">Generate a <strong>methylation pipeline</strong><br>from any GEO dataset</h1>
+    <p class="hero-sub">Enter an Illumina 450K or EPIC array series ID to receive<br>a custom, publication-ready R analysis script.</p>
+
+    <div class="id-widget">
+      <span class="id-prefix">GSE</span>
+      <input
+        id="series-input"
+        type="text"
+        inputmode="numeric"
+        placeholder="206879"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-label="GEO Series numeric ID"
+      >
+      <button class="id-submit" id="id-submit">Analyze →</button>
+    </div>
+    <p class="id-hint">Enter the numeric portion of the GSE accession number</p>
+    <p class="id-error" id="id-error">Please enter a valid series number — digits only.</p>
+  </section>
+
+  <!-- Stage 2: Chat Q&A -->
+  <section id="chat-stage" class="reveal-section">
+    <div class="section-divider"></div>
+    <div class="chat-header">
+      <div class="chat-pulse"></div>
+      <span class="chat-label">Reviewing <span id="chat-id-label">GSE—</span></span>
+    </div>
+    <div class="chat-messages" id="chat-messages" role="log" aria-live="polite"></div>
+    <div class="chat-input-row">
+      <textarea
+        id="chat-textarea"
+        placeholder="Type your answer…"
+        rows="1"
+        aria-label="Your answer"
+      ></textarea>
+      <button class="chat-send-btn" id="chat-send" title="Send answer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 8h10M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Stage 3: Progress -->
+  <section id="progress-stage" class="reveal-section">
+    <div class="section-divider"></div>
+    <div class="progress-label-row">
+      <span class="progress-eyebrow">Generating R Script</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-steps">
+      <div class="p-step" data-pct="18">
+        <div class="p-step-icon"></div>
+        <span>Fetching series metadata from GEO</span>
+      </div>
+      <div class="p-step" data-pct="38">
+        <div class="p-step-icon"></div>
+        <span>Validating sample structure and array type</span>
+      </div>
+      <div class="p-step" data-pct="60">
+        <div class="p-step-icon"></div>
+        <span>Analyzing experimental design</span>
+      </div>
+      <div class="p-step" data-pct="80">
+        <div class="p-step-icon"></div>
+        <span>Building normalization &amp; QC pipeline</span>
+      </div>
+      <div class="p-step" data-pct="100">
+        <div class="p-step-icon"></div>
+        <span>Writing R script</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stage 4: Code Output -->
+  <section id="output-stage" class="reveal-section">
+    <div class="section-divider"></div>
+    <div class="output-top">
+      <div>
+        <div class="output-meta-name">methylation_pipeline.R</div>
+        <div class="output-meta-detail" id="output-detail">GSE— · EPIC array · ChAMP pipeline</div>
+      </div>
+      <div class="output-actions">
+        <button class="btn-icon btn-copy" id="btn-copy">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="3.5" y="3.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.25"/>
+            <path d="M3.5 3.5V2A1.5 1.5 0 0 1 5 .5h5A1.5 1.5 0 0 1 11.5 2v6A1.5 1.5 0 0 1 10 9.5H9" stroke="currentColor" stroke-width="1.25"/>
+          </svg>
+          Copy
+        </button>
+        <button class="btn-icon btn-save" id="btn-save">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M6.5 1v7M3.5 5.5l3 2.5 3-2.5M1.5 10v1.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          </svg>
+          Save .R
+        </button>
+      </div>
+    </div>
+    <div class="code-wrap">
+      <pre><code class="language-r" id="r-code-output"></code></pre>
+    </div>
+  </section>
+</main>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let gseId = '';
+let userAnswers = {};
+let currentQ = 0;
+let rawScript = '';
+
+const QUESTIONS = [
+  {
+    id: 'comparison',
+    prompt: gse =>
+      `I found <strong>${gse}</strong> in GEO. What is the primary group comparison for this analysis? ` +
+      `For example: <em>"Tumor vs. Normal"</em> or <em>"Treated vs. Control"</em>.`,
+    placeholder: 'e.g. Tumor vs. Normal',
+  },
+  {
+    id: 'cell_type',
+    prompt: () =>
+      `Should I include <strong>cell-type deconvolution</strong>? ` +
+      `This adjusts for differences in immune cell composition and is recommended for whole blood or PBMC samples.`,
+    placeholder: 'Yes / No — describe your tissue if helpful',
+  },
+  {
+    id: 'batch',
+    prompt: () =>
+      `Are there any <strong>known batch variables</strong> in this dataset (e.g., processing plate, ` +
+      `sentrix slide, collection site) that should be corrected with ComBat?`,
+    placeholder: 'e.g. Plate, or "None"',
+  },
+];
+
+// ── Elements ─────────────────────────────────────────────────
+const inputStage    = document.getElementById('input-stage');
+const chatStage     = document.getElementById('chat-stage');
+const progressStage = document.getElementById('progress-stage');
+const outputStage   = document.getElementById('output-stage');
+
+const seriesInput   = document.getElementById('series-input');
+const idSubmit      = document.getElementById('id-submit');
+const idError       = document.getElementById('id-error');
+const chatIdLabel   = document.getElementById('chat-id-label');
+const chatMessages  = document.getElementById('chat-messages');
+const chatTextarea  = document.getElementById('chat-textarea');
+const chatSend      = document.getElementById('chat-send');
+const progressBar   = document.getElementById('progress-bar');
+const progressPct   = document.getElementById('progress-pct');
+const pSteps        = document.querySelectorAll('.p-step');
+const rCodeOutput   = document.getElementById('r-code-output');
+const outputDetail  = document.getElementById('output-detail');
+const btnCopy       = document.getElementById('btn-copy');
+const btnSave       = document.getElementById('btn-save');
+
+// ── Reveal / hide ─────────────────────────────────────────────
+function reveal(el) {
+  el.classList.add('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+}
+
+function conceal(el) {
+  el.classList.remove('visible');
+  setTimeout(() => el.classList.remove('show'), 380);
+}
+
+// ── Stage 1: Series ID ────────────────────────────────────────
+seriesInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitId(); });
+idSubmit.addEventListener('click', submitId);
+
+function submitId() {
+  const raw = seriesInput.value.trim().replace(/^GSE/i, '');
+  if (!/^\d{3,}$/.test(raw)) {
+    idError.style.display = 'block';
+    seriesInput.focus();
+    return;
+  }
+  idError.style.display = 'none';
+  gseId = 'GSE' + raw;
+
+  inputStage.classList.add('locked');
+  idSubmit.disabled = true;
+  seriesInput.disabled = true;
+
+  chatIdLabel.textContent = gseId;
+  reveal(chatStage);
+  setTimeout(() => askQuestion(0), 700);
+}
+
+// ── Stage 2: Chat ─────────────────────────────────────────────
+function addMessage(type, html) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${type}`;
+  row.innerHTML = `<div class="msg-bubble">${html}</div>`;
+  chatMessages.appendChild(row);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return row;
+}
+
+function addTyping() {
+  const row = document.createElement('div');
+  row.className = 'typing-row';
+  row.innerHTML = `<div class="typing-bubble">
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  </div>`;
+  chatMessages.appendChild(row);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return row;
+}
+
+function askQuestion(index) {
+  const t = addTyping();
+  setTimeout(() => {
+    t.remove();
+    addMessage('system', QUESTIONS[index].prompt(gseId));
+    chatTextarea.placeholder = QUESTIONS[index].placeholder;
+    chatTextarea.disabled = false;
+    chatSend.disabled = false;
+    chatTextarea.focus();
+  }, 700 + Math.random() * 400);
+}
+
+chatTextarea.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAnswer(); }
+});
+chatSend.addEventListener('click', sendAnswer);
+
+chatTextarea.addEventListener('input', () => {
+  chatTextarea.style.height = 'auto';
+  chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 120) + 'px';
+});
+
+function sendAnswer() {
+  const val = chatTextarea.value.trim();
+  if (!val) return;
+  chatTextarea.disabled = true;
+  chatSend.disabled = true;
+  chatTextarea.value = '';
+  chatTextarea.style.height = '';
+
+  userAnswers[QUESTIONS[currentQ].id] = val;
+  addMessage('user', escHtml(val));
+  currentQ++;
+
+  if (currentQ < QUESTIONS.length) {
+    setTimeout(() => {
+      chatTextarea.disabled = false;
+      chatSend.disabled = false;
+      askQuestion(currentQ);
+    }, 300);
+  } else {
+    const t = addTyping();
+    setTimeout(() => {
+      t.remove();
+      addMessage('system', 'Got it — generating your pipeline now…');
+      setTimeout(beginGeneration, 900);
+    }, 600);
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Stage 3: Progress ─────────────────────────────────────────
+function beginGeneration() {
+  conceal(chatStage);
+  setTimeout(() => { reveal(progressStage); runSteps(); }, 420);
+}
+
+function runSteps() {
+  const steps = Array.from(pSteps);
+  const delays = [900, 1300, 1100, 1500, 950];
+  let i = 0;
+
+  function advance() {
+    if (i > 0) {
+      steps[i-1].classList.remove('active');
+      steps[i-1].classList.add('done');
+      steps[i-1].querySelector('.p-step-icon').textContent = '✓';
+    }
+    if (i >= steps.length) {
+      setTimeout(() => { conceal(progressStage); setTimeout(showOutput, 420); }, 500);
+      return;
+    }
+    steps[i].classList.add('active');
+    const pct = parseInt(steps[i].dataset.pct);
+    progressBar.style.width = pct + '%';
+    progressPct.textContent = pct + '%';
+    i++;
+    setTimeout(advance, delays[i-1] ?? 1000);
+  }
+  advance();
+}
+
+// ── Stage 4: Output ───────────────────────────────────────────
+function showOutput() {
+  const comparison = userAnswers.comparison || 'Case vs. Control';
+  const cellType   = /^y(es)?$/i.test((userAnswers.cell_type || '').trim());
+  const batchRaw   = (userAnswers.batch || '').trim();
+  const batchVar   = /^none?$/i.test(batchRaw) ? null : batchRaw || null;
+
+  outputDetail.textContent = `${gseId} · EPIC array · ChAMP pipeline`;
+  rawScript = buildScript(gseId, comparison, batchVar, cellType);
+  rCodeOutput.textContent = rawScript;
+  hljs.highlightElement(rCodeOutput);
+  reveal(outputStage);
+}
+
+// ── R Script builder ──────────────────────────────────────────
+function buildScript(gse, comparison, batchVar, cellType) {
+  const date  = new Date().toISOString().split('T')[0];
+  const parts = comparison.split(/\s*vs\.?\s*/i);
+  const grp1  = (parts[0] || 'Case').trim();
+  const grp2  = (parts[1] || 'Control').trim();
+  const g1    = grp1.replace(/\s+/g, '_');
+  const g2    = grp2.replace(/\s+/g, '_');
+  let   s     = 1;
+  const hdr   = title => {
+    const line = `# --- ${s++}. ${title} `;
+    return line + '-'.repeat(Math.max(2, 66 - line.length));
+  };
+
+  return `# ${'='.repeat(64)}
+# DNA Methylation Analysis Pipeline
+# Generated by MethylScript | Piccolo Lab, BYU
+# Series     : ${gse}
+# Comparison : ${grp1} vs. ${grp2}
+# Array      : Illumina EPIC (850K)
+# Date       : ${date}
+# ${'='.repeat(64)}
+
+${hdr('Required Packages')}
+packages <- c(
+  "GEOquery",             # GEO data retrieval
+  "ChAMP",                # Core methylation pipeline
+  "minfi",                # Low-level IDAT processing
+  "limma",                # Linear modeling for DMPs
+  "DMRcate"               # Differentially methylated regions${cellType ? '\n  "EpiDISH"               # Cell-type deconvolution' : ''}${batchVar ? '\n  "sva"                   # Surrogate variable analysis' : ''}
+)
+
+for (pkg in packages) {
+  if (!requireNamespace(pkg, quietly = TRUE))
+    BiocManager::install(pkg)
+  library(pkg, character.only = TRUE)
+}
+
+${hdr('Download Data from GEO')}
+gse_obj    <- getGEO("${gse}", GSEMatrix = TRUE, getGPL = FALSE)
+pdata      <- pData(gse_obj[[1]])
+
+supp_files <- getGEOSuppFiles("${gse}")
+idat_dir   <- file.path("${gse}", "IDAT")
+untar(rownames(supp_files)[1], exdir = idat_dir)
+cat("IDAT files extracted to:", idat_dir, "\\n")
+
+${hdr('Load & Filter')}
+myLoad <- champ.load(
+  directory      = idat_dir,
+  arraytype      = "EPIC",
+  filterXY       = TRUE,    # Remove sex-chromosome probes
+  filterSNPs     = TRUE,    # Remove SNP-overlapping probes
+  filterMultiHit = TRUE,    # Remove cross-reactive probes
+  filterNoCG     = TRUE,    # Retain only CpG probes
+  detPcut        = 0.01,    # Detection p-value threshold
+  filterBeads    = TRUE,
+  beadCutoff     = 0.05,
+  pd             = pdata
+)
+
+${hdr('Quality Control')}
+champ.QC(
+  beta       = myLoad$beta,
+  pheno      = myLoad$pd$Sample_Group,
+  resultsDir = "./ChAMP_QC"
+)
+
+${hdr('Normalization (BMIQ)')}
+myNorm <- champ.norm(
+  beta       = myLoad$beta,
+  arraytype  = "EPIC",
+  method     = "BMIQ",      # Corrects Infinium Type I/II bias
+  plotBMIQ   = FALSE,
+  resultsDir = "./ChAMP_Norm"
+)
+${cellType ? `
+${hdr('Cell-Type Deconvolution')}
+# Estimate blood cell fractions to include as model covariates
+RGset       <- read.metharray.exp(idat_dir)
+cell_counts <- epidish(
+  beta.m  = myNorm,
+  ref.m   = centEpigenomics,
+  method  = "RPC"
+)$estF
+pdata <- cbind(pdata, cell_counts)
+` : ''}${batchVar ? `
+${hdr('Batch Correction (ComBat)')}
+# Batch variable identified: ${batchVar}
+myComBat <- champ.runCombat(
+  beta      = myNorm,
+  pd        = myLoad$pd,
+  batchname = c("${batchVar.split(/\s+/)[0]}")
+)
+beta_final <- myComBat
+` : `
+${hdr('Finalize Beta Matrix')}
+beta_final <- myNorm
+`}
+${hdr('Surrogate Variable Analysis')}
+M_vals <- logit2(beta_final)
+pheno  <- factor(pdata$Sample_Group)
+mod    <- model.matrix(~ pheno)
+mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))
+svaobj <- sva(M_vals, mod, mod0)
+svs    <- svaobj$sv
+cat(sprintf("SVA identified %d surrogate variable(s).\\n", ncol(svs)))
+
+${hdr(`Differentially Methylated Positions (${g1} vs. ${g2})`)}
+design <- model.matrix(
+  ~ 0 + pheno${cellType ? ' + cell_counts' : ''} + svs
+)
+colnames(design)[1:2] <- c("${g1}", "${g2}")
+
+fit  <- lmFit(M_vals, design)
+cont <- makeContrasts(${g1} - ${g2}, levels = design)
+fit2 <- contrasts.fit(fit, cont)
+fit2 <- eBayes(fit2)
+
+dmps     <- topTable(fit2, coef = 1, number = Inf, adjust.method = "BH")
+dmps_sig <- subset(dmps, adj.P.Val < 0.05 & abs(logFC) > 0.1)
+cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))
+
+${hdr('Differentially Methylated Regions')}
+annot <- cpg.annotate(
+  datatype      = "array",
+  object        = M_vals,
+  what          = "M",
+  arraytype     = "EPIC",
+  analysis.type = "differential",
+  design        = design,
+  coef          = 2
+)
+dmrs       <- dmrcate(annot, lambda = 1000, C = 2)
+dmr_ranges <- extractRanges(dmrs, genome = "hg38")
+cat(sprintf("Differentially methylated regions: %d\\n", length(dmr_ranges)))
+
+${hdr('Save Results')}
+dir.create("results", showWarnings = FALSE)
+write.csv(dmps,                      "results/all_DMPs.csv",         row.names = TRUE)
+write.csv(dmps_sig,                  "results/significant_DMPs.csv", row.names = TRUE)
+write.csv(as.data.frame(dmr_ranges), "results/DMRs.csv",             row.names = FALSE)
+save(beta_final, dmps, dmr_ranges,   file = "results/methylation_workspace.RData")
+
+message("Pipeline complete. Results written to ./results/")
+`;
+}
+
+// ── Copy / Save ───────────────────────────────────────────────
+btnCopy.addEventListener('click', () => {
+  navigator.clipboard.writeText(rawScript).then(() => {
+    btnCopy.classList.add('copied');
+    const orig = btnCopy.innerHTML;
+    btnCopy.innerHTML = orig.replace('Copy', 'Copied!');
+    setTimeout(() => {
+      btnCopy.classList.remove('copied');
+      btnCopy.innerHTML = orig;
+    }, 2000);
+  });
+});
+
+btnSave.addEventListener('click', () => {
+  const blob = new Blob([rawScript], { type: 'text/plain' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url,
+    download: `methylation_pipeline_${gseId}.R`,
+  });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ── Init ──────────────────────────────────────────────────────
+hljs.configure({ ignoreUnescapedHTML: true });
+seriesInput.focus();
+</script>
+
+</body>
+</html>
