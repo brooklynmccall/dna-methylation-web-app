@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MethylScript — Piccolo Lab</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"></script>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MethylScript</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"></script>
+
+<style>
 /* ── Tokens ── */
 :root {
   --bg:             #F2F1ED;
@@ -64,7 +65,6 @@
   --error:          #E74C3C;
 }
 
-/* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -77,7 +77,6 @@ body {
   line-height: 1.5;
 }
 
-/* ── Header ── */
 header {
   max-width: 680px;
   margin: 0 auto 64px;
@@ -87,526 +86,220 @@ header {
   gap: 16px;
 }
 
-.logo-mark {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.logo-mark { display: flex; align-items: center; gap: 10px; }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 8px;
   background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-
 .logo-icon svg { display: block; }
 
-.logo-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
+.logo-text { display: flex; flex-direction: column; gap: 1px; }
+.logo-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; line-height: 1; }
+.logo-org  { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-3); letter-spacing: 0.04em; line-height: 1; }
+.header-tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.05em; padding-top: 2px; }
 
-.logo-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.01em;
-  line-height: 1;
-}
-
-.logo-org {
-  font-size: 11px;
-  font-family: 'IBM Plex Mono', monospace;
-  color: var(--text-3);
-  letter-spacing: 0.04em;
-  line-height: 1;
-}
-
-.header-tag {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--text-3);
-  letter-spacing: 0.05em;
-  padding-top: 2px;
-}
-
-/* ── Main container ── */
-main {
-  max-width: 680px;
-  margin: 0 auto;
-}
+main { max-width: 680px; margin: 0 auto; }
 
 /* ── Input Stage ── */
-#input-stage {
-  text-align: center;
-  padding-bottom: 8px;
-  transition: opacity 0.3s ease;
-}
-
-#input-stage.locked {
-  opacity: 0.55;
-  pointer-events: none;
-}
+#input-stage { text-align: center; padding-bottom: 8px; transition: opacity 0.3s ease; }
+#input-stage.locked { opacity: 0.55; pointer-events: none; }
 
 .eyebrow {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 22px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 22px;
 }
 
 .hero-heading {
-  font-size: clamp(26px, 5vw, 38px);
-  font-weight: 300;
-  letter-spacing: -0.025em;
-  color: var(--text);
-  line-height: 1.2;
-  margin-bottom: 12px;
-  text-wrap: balance;
+  font-size: clamp(26px, 5vw, 38px); font-weight: 300;
+  letter-spacing: -0.025em; color: var(--text);
+  line-height: 1.2; margin-bottom: 12px; text-wrap: balance;
 }
-
 .hero-heading strong { font-weight: 600; }
 
-.hero-sub {
-  font-size: 15px;
-  color: var(--text-2);
-  line-height: 1.6;
-  margin-bottom: 40px;
-  text-wrap: balance;
-}
+.hero-sub { font-size: 15px; color: var(--text-2); line-height: 1.6; margin-bottom: 40px; text-wrap: balance; }
 
 .id-widget {
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
+  border-radius: 12px; overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   transition: border-color 0.15s, box-shadow 0.15s;
   text-align: left;
 }
-
-.id-widget:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-subtle);
-}
+.id-widget:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
 
 .id-prefix {
   padding: 0 4px 0 20px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 19px;
-  color: var(--text-3);
-  user-select: none;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
+  font-family: 'IBM Plex Mono', monospace; font-size: 19px;
+  color: var(--text-3); user-select: none; white-space: nowrap;
+  letter-spacing: 0.02em; flex-shrink: 0;
 }
 
 #series-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 19px;
-  font-weight: 500;
-  color: var(--text);
-  padding: 18px 8px;
-  letter-spacing: 0.03em;
-  caret-color: var(--accent);
-  min-width: 0;
+  flex: 1; border: none; outline: none; background: transparent;
+  font-family: 'IBM Plex Mono', monospace; font-size: 19px;
+  font-weight: 500; color: var(--text); padding: 18px 8px;
+  letter-spacing: 0.03em; caret-color: var(--accent); min-width: 0;
 }
-
 #series-input::placeholder { color: var(--border); font-weight: 400; }
 
 .id-submit {
-  margin: 6px;
-  padding: 10px 22px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  flex-shrink: 0;
-  white-space: nowrap;
+  margin: 6px; padding: 10px 22px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0; white-space: nowrap;
 }
-
 .id-submit:hover  { background: var(--accent-hover); }
 .id-submit:active { transform: scale(0.97); }
 .id-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
-.id-hint {
-  margin-top: 11px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  color: var(--text-3);
-}
+.id-hint  { margin-top: 11px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-3); }
+.id-error { margin-top: 10px; font-size: 13px; color: var(--error); display: none; }
 
-.id-error {
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--error);
-  display: none;
-}
-
-/* ── Shared reveal animation ── */
-.reveal-section {
-  opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.38s ease, transform 0.38s ease;
-  display: none;
-}
-
+/* ── Reveal sections ── */
+.reveal-section { opacity: 0; transform: translateY(14px); transition: opacity 0.38s ease, transform 0.38s ease; display: none; }
 .reveal-section.show    { display: block; }
 .reveal-section.visible { opacity: 1; transform: translateY(0); }
 
-.section-divider {
-  height: 1px;
-  background: var(--border-subtle);
-  margin: 36px 0;
-}
+.section-divider { height: 1px; background: var(--border-subtle); margin: 36px 0; }
 
-/* ── Chat Stage ── */
-.chat-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 24px;
-}
+/* ── Chat ── */
+.chat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
 
-.chat-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: pulse 2s ease infinite;
-}
+.chat-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease infinite; }
+@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.85); } }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
-}
-
-.chat-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
-
+.chat-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-2); }
 .chat-label span { color: var(--accent); }
 
-.chat-messages {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 20px;
-}
+.chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
 
 .msg-row { display: flex; }
 .msg-row.system { justify-content: flex-start; }
 .msg-row.user   { justify-content: flex-end; }
 
-.msg-bubble {
-  padding: 12px 16px;
-  font-size: 14px;
-  line-height: 1.58;
-  max-width: 80%;
-}
+.msg-bubble { padding: 12px 16px; font-size: 14px; line-height: 1.58; max-width: 82%; }
 
 .msg-row.system .msg-bubble {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 3px 14px 14px 14px;
-  color: var(--text);
+  background: var(--surface); border: 1px solid var(--border-subtle);
+  border-radius: 3px 14px 14px 14px; color: var(--text);
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-
 .msg-row.user .msg-bubble {
-  background: var(--accent-subtle);
-  border-radius: 14px 3px 14px 14px;
-  color: var(--accent-text);
-  font-weight: 500;
+  background: var(--accent-subtle); border-radius: 14px 3px 14px 14px;
+  color: var(--accent-text); font-weight: 500;
 }
 
 .msg-bubble strong { font-weight: 600; }
 .msg-bubble em     { font-style: italic; color: var(--text-2); }
-
-.msg-bubble code {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12.5px;
-  background: rgba(0,0,0,0.06);
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
+.msg-bubble code   { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px; }
 .msg-row.user .msg-bubble code { background: rgba(0,0,0,0.12); }
 
 .typing-row { display: flex; }
-
 .typing-bubble {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 14px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
+  display: flex; align-items: center; gap: 5px; padding: 14px 18px;
+  background: var(--surface); border: 1px solid var(--border-subtle);
   border-radius: 3px 14px 14px 14px;
 }
-
-.typing-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-3);
-  animation: bounce 1.3s ease infinite;
-}
+.typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); animation: bounce 1.3s ease infinite; }
 .typing-dot:nth-child(2) { animation-delay: 0.17s; }
 .typing-dot:nth-child(3) { animation-delay: 0.34s; }
+@keyframes bounce { 0%,60%,100% { transform:translateY(0); opacity:0.35; } 30% { transform:translateY(-5px); opacity:1; } }
 
-@keyframes bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
-  30% { transform: translateY(-5px); opacity: 1; }
-}
-
-.chat-input-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
+.chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
 
 #chat-textarea {
-  flex: 1;
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 14px;
-  color: var(--text);
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 14px;
-  outline: none;
-  resize: none;
-  min-height: 44px;
-  max-height: 120px;
-  overflow-y: auto;
-  line-height: 1.45;
-  transition: border-color 0.15s;
+  flex: 1; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+  color: var(--text); background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 11px 14px; outline: none; resize: none;
+  min-height: 44px; max-height: 120px; overflow-y: auto;
+  line-height: 1.45; transition: border-color 0.15s;
 }
-
 #chat-textarea:focus { border-color: var(--accent); }
 #chat-textarea::placeholder { color: var(--text-3); }
 #chat-textarea:disabled { opacity: 0.5; }
 
 .chat-send-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  width: 42px; height: 42px; border-radius: 10px; border: none;
+  background: var(--accent); color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   transition: background 0.15s, transform 0.1s;
 }
-
 .chat-send-btn:hover  { background: var(--accent-hover); }
 .chat-send-btn:active { transform: scale(0.95); }
 .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-/* ── Progress Stage ── */
-.progress-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
+/* ── Progress ── */
+.progress-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.progress-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-2); }
+#progress-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); }
 
-.progress-eyebrow {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
+.progress-track { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 28px; }
+.progress-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
 
-#progress-pct {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--text-3);
-  transition: opacity 0.3s;
-}
-
-.progress-track {
-  height: 3px;
-  background: var(--border);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 28px;
-}
-
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  background: var(--accent);
-  border-radius: 99px;
-  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.progress-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.p-step {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  font-size: 14px;
-  color: var(--text-3);
-  transition: color 0.3s;
-}
-
+.progress-steps { display: flex; flex-direction: column; gap: 12px; }
+.p-step { display: flex; align-items: center; gap: 13px; font-size: 14px; color: var(--text-3); transition: color 0.3s; }
 .p-step.active { color: var(--text); }
 .p-step.done   { color: var(--text-2); }
 
 .p-step-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 10px;
-  font-family: 'IBM Plex Mono', monospace;
-  transition: border-color 0.3s, background 0.3s, color 0.3s, box-shadow 0.3s;
+  width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+  transition: border-color 0.3s, background 0.3s, color 0.3s;
 }
+.p-step.active .p-step-icon { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.p-step.done   .p-step-icon { border-color: var(--accent); background: var(--accent); color: #fff; }
 
-.p-step.active .p-step-icon {
-  border-color: var(--accent);
-  background: var(--accent-subtle);
-  color: var(--accent);
-}
+/* ── Output ── */
+.output-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.output-meta-name   { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.output-meta-detail { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.03em; }
 
-.p-step.done .p-step-icon {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
-}
-
-/* ── Output Stage ── */
-.output-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.output-meta-name {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 3px;
-}
-
-.output-meta-detail {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--text-3);
-  letter-spacing: 0.03em;
-}
-
-.output-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
+.output-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
 .btn-icon {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none; transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
 }
-
 .btn-icon:active { transform: scale(0.96); }
 
-.btn-copy {
-  background: var(--surface);
-  color: var(--text-2);
-  border: 1px solid var(--border);
-}
-
-.btn-copy:hover { color: var(--accent); border-color: var(--accent); }
+.btn-copy { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); }
+.btn-copy:hover  { color: var(--accent); border-color: var(--accent); }
 .btn-copy.copied { color: var(--success); border-color: var(--success); }
 
 .btn-save { background: var(--accent); color: #fff; }
 .btn-save:hover { background: var(--accent-hover); }
 
-.code-wrap {
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #21262D;
-}
-
-.code-wrap pre {
-  margin: 0;
-  background: #0D1117;
-  overflow-x: auto;
-  padding: 24px;
-}
-
+.code-wrap { border-radius: 12px; overflow: hidden; border: 1px solid #21262D; }
+.code-wrap pre { margin: 0; background: #0D1117; overflow-x: auto; padding: 24px; }
 .code-wrap pre code {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12.5px;
-  line-height: 1.7;
-  display: block;
-  white-space: pre;
-  tab-size: 2;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+  line-height: 1.7; display: block; white-space: pre; tab-size: 2;
 }
 
-/* highlight.js tokens */
-.hljs                  { background: transparent; color: #e6edf3; }
-.hljs-comment          { color: #6e7681; font-style: italic; }
-.hljs-string           { color: #a5d6ff; }
-.hljs-number           { color: #79c0ff; }
-.hljs-keyword          { color: #ff7b72; }
-.hljs-built_in         { color: #ffa657; }
-.hljs-title.function_  { color: #d2a8ff; }
-.hljs-params           { color: #e6edf3; }
-.hljs-operator         { color: #ff7b72; }
-.hljs-punctuation      { color: #8b949e; }
-.hljs-literal          { color: #79c0ff; }
+.hljs                 { background: transparent; color: #e6edf3; }
+.hljs-comment         { color: #6e7681; font-style: italic; }
+.hljs-string          { color: #a5d6ff; }
+.hljs-number          { color: #79c0ff; }
+.hljs-keyword         { color: #ff7b72; }
+.hljs-built_in        { color: #ffa657; }
+.hljs-title.function_ { color: #d2a8ff; }
+.hljs-params          { color: #e6edf3; }
+.hljs-operator        { color: #ff7b72; }
+.hljs-punctuation     { color: #8b949e; }
+.hljs-literal         { color: #79c0ff; }
 
-/* ── Responsive ── */
 @media (max-width: 480px) {
   body { padding: 20px 16px 60px; }
   header { margin-bottom: 40px; }
@@ -623,7 +316,7 @@ main {
   .reveal-section, .progress-bar, .p-step, .p-step-icon { transition: none; }
   .chat-pulse, .typing-dot { animation: none; opacity: 1; transform: none; }
 }
-  </style>
+</style>
 </head>
 <body>
 
@@ -641,15 +334,14 @@ main {
       <span class="logo-org">Piccolo Lab · BYU</span>
     </div>
   </div>
-  <span class="header-tag">450K / EPIC</span>
+  <span class="header-tag">27K / 450K / EPIC</span>
 </header>
 
 <main>
-  <!-- Stage 1: Series ID -->
   <section id="input-stage">
     <p class="eyebrow">GEO Series ID</p>
     <h1 class="hero-heading">Generate a <strong>methylation pipeline</strong><br>from any GEO dataset</h1>
-    <p class="hero-sub">Enter an Illumina 450K or EPIC array series ID to receive<br>a custom, publication-ready R analysis script.</p>
+    <p class="hero-sub">Enter an Illumina 27K, 450K, or EPIC array series ID to receive<br>a custom, publication-ready R analysis script.</p>
 
     <div class="id-widget">
       <span class="id-prefix">GSE</span>
@@ -669,7 +361,6 @@ main {
     <p class="id-error" id="id-error">Please enter a valid series number — digits only.</p>
   </section>
 
-  <!-- Stage 2: Chat Q&A -->
   <section id="chat-stage" class="reveal-section">
     <div class="section-divider"></div>
     <div class="chat-header">
@@ -677,7 +368,7 @@ main {
       <span class="chat-label">Reviewing <span id="chat-id-label">GSE—</span></span>
     </div>
     <div class="chat-messages" id="chat-messages" role="log" aria-live="polite"></div>
-    <div class="chat-input-row">
+    <div class="chat-input-row" id="chat-input-row">
       <textarea
         id="chat-textarea"
         placeholder="Type your answer…"
@@ -692,7 +383,6 @@ main {
     </div>
   </section>
 
-  <!-- Stage 3: Progress -->
   <section id="progress-stage" class="reveal-section">
     <div class="section-divider"></div>
     <div class="progress-label-row">
@@ -703,36 +393,20 @@ main {
       <div class="progress-bar" id="progress-bar"></div>
     </div>
     <div class="progress-steps">
-      <div class="p-step" data-pct="18">
-        <div class="p-step-icon"></div>
-        <span>Fetching series metadata from GEO</span>
-      </div>
-      <div class="p-step" data-pct="38">
-        <div class="p-step-icon"></div>
-        <span>Validating sample structure and array type</span>
-      </div>
-      <div class="p-step" data-pct="60">
-        <div class="p-step-icon"></div>
-        <span>Analyzing experimental design</span>
-      </div>
-      <div class="p-step" data-pct="80">
-        <div class="p-step-icon"></div>
-        <span>Building normalization &amp; QC pipeline</span>
-      </div>
-      <div class="p-step" data-pct="100">
-        <div class="p-step-icon"></div>
-        <span>Writing R script</span>
-      </div>
+      <div class="p-step" data-pct="18"><div class="p-step-icon"></div><span>Fetching series metadata from GEO</span></div>
+      <div class="p-step" data-pct="38"><div class="p-step-icon"></div><span>Validating sample structure and array type</span></div>
+      <div class="p-step" data-pct="60"><div class="p-step-icon"></div><span>Analyzing experimental design</span></div>
+      <div class="p-step" data-pct="80"><div class="p-step-icon"></div><span>Building normalization &amp; QC pipeline</span></div>
+      <div class="p-step" data-pct="100"><div class="p-step-icon"></div><span>Writing R script</span></div>
     </div>
   </section>
 
-  <!-- Stage 4: Code Output -->
   <section id="output-stage" class="reveal-section">
     <div class="section-divider"></div>
     <div class="output-top">
       <div>
         <div class="output-meta-name">methylation_pipeline.R</div>
-        <div class="output-meta-detail" id="output-detail">GSE— · EPIC array · ChAMP pipeline</div>
+        <div class="output-meta-detail" id="output-detail">GSE— · — array · — pipeline</div>
       </div>
       <div class="output-actions">
         <button class="btn-icon btn-copy" id="btn-copy">
@@ -766,65 +440,77 @@ let rawScript = '';
 const QUESTIONS = [
   {
     id: 'comparison',
-    prompt: gse =>
-      `I found <strong>${gse}</strong> in GEO. What is the primary group comparison for this analysis? ` +
-      `For example: <em>"Tumor vs. Normal"</em> or <em>"Treated vs. Control"</em>.`,
+    prompt: function(gse) {
+      return 'I found <strong>' + gse + '</strong> in GEO. What is the primary group comparison for this analysis? ' +
+             'For example: <em>"Tumor vs. Normal"</em> or <em>"Treated vs. Control"</em>.';
+    },
     placeholder: 'e.g. Tumor vs. Normal',
   },
   {
+    id: 'array_type',
+    prompt: function() {
+      return 'Which <strong>array platform</strong> was used? This determines the normalization strategy and analysis packages. ' +
+             'Options: <code>27K</code> (HumanMethylation27), <code>450K</code>, or <code>EPIC</code>.';
+    },
+    placeholder: '27K, 450K, or EPIC',
+  },
+  {
     id: 'cell_type',
-    prompt: () =>
-      `Should I include <strong>cell-type deconvolution</strong>? ` +
-      `This adjusts for differences in immune cell composition and is recommended for whole blood or PBMC samples.`,
+    prompt: function() {
+      return 'Should I include <strong>cell-type deconvolution</strong>? ' +
+             'This adjusts for differences in immune cell composition and is recommended for whole blood or PBMC samples.';
+    },
     placeholder: 'Yes / No — describe your tissue if helpful',
   },
   {
     id: 'batch',
-    prompt: () =>
-      `Are there any <strong>known batch variables</strong> in this dataset (e.g., processing plate, ` +
-      `sentrix slide, collection site) that should be corrected with ComBat?`,
+    prompt: function() {
+      return 'Are there any <strong>known batch variables</strong> in this dataset (e.g., processing plate, ' +
+             'sentrix slide, collection site) that should be corrected with ComBat?';
+    },
     placeholder: 'e.g. Plate, or "None"',
   },
 ];
 
 // ── Elements ─────────────────────────────────────────────────
-const inputStage    = document.getElementById('input-stage');
-const chatStage     = document.getElementById('chat-stage');
-const progressStage = document.getElementById('progress-stage');
-const outputStage   = document.getElementById('output-stage');
-
-const seriesInput   = document.getElementById('series-input');
-const idSubmit      = document.getElementById('id-submit');
-const idError       = document.getElementById('id-error');
-const chatIdLabel   = document.getElementById('chat-id-label');
-const chatMessages  = document.getElementById('chat-messages');
-const chatTextarea  = document.getElementById('chat-textarea');
-const chatSend      = document.getElementById('chat-send');
-const progressBar   = document.getElementById('progress-bar');
-const progressPct   = document.getElementById('progress-pct');
-const pSteps        = document.querySelectorAll('.p-step');
-const rCodeOutput   = document.getElementById('r-code-output');
-const outputDetail  = document.getElementById('output-detail');
-const btnCopy       = document.getElementById('btn-copy');
-const btnSave       = document.getElementById('btn-save');
+var inputStage    = document.getElementById('input-stage');
+var chatStage     = document.getElementById('chat-stage');
+var progressStage = document.getElementById('progress-stage');
+var outputStage   = document.getElementById('output-stage');
+var seriesInput   = document.getElementById('series-input');
+var idSubmit      = document.getElementById('id-submit');
+var idError       = document.getElementById('id-error');
+var chatIdLabel   = document.getElementById('chat-id-label');
+var chatMessages  = document.getElementById('chat-messages');
+var chatTextarea  = document.getElementById('chat-textarea');
+var chatSend      = document.getElementById('chat-send');
+var progressBar   = document.getElementById('progress-bar');
+var progressPct   = document.getElementById('progress-pct');
+var pSteps        = document.querySelectorAll('.p-step');
+var rCodeOutput   = document.getElementById('r-code-output');
+var outputDetail  = document.getElementById('output-detail');
+var btnCopy       = document.getElementById('btn-copy');
+var btnSave       = document.getElementById('btn-save');
 
 // ── Reveal / hide ─────────────────────────────────────────────
 function reveal(el) {
   el.classList.add('show');
-  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() { el.classList.add('visible'); });
+  });
 }
 
 function conceal(el) {
   el.classList.remove('visible');
-  setTimeout(() => el.classList.remove('show'), 380);
+  setTimeout(function() { el.classList.remove('show'); }, 380);
 }
 
 // ── Stage 1: Series ID ────────────────────────────────────────
-seriesInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitId(); });
+seriesInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') submitId(); });
 idSubmit.addEventListener('click', submitId);
 
 function submitId() {
-  const raw = seriesInput.value.trim().replace(/^GSE/i, '');
+  var raw = seriesInput.value.trim().replace(/^GSE/i, '');
   if (!/^\d{3,}$/.test(raw)) {
     idError.style.display = 'block';
     seriesInput.focus();
@@ -832,82 +518,73 @@ function submitId() {
   }
   idError.style.display = 'none';
   gseId = 'GSE' + raw;
-
   inputStage.classList.add('locked');
   idSubmit.disabled = true;
   seriesInput.disabled = true;
-
   chatIdLabel.textContent = gseId;
   reveal(chatStage);
-  setTimeout(() => askQuestion(0), 700);
+  setTimeout(function() { askQuestion(0); }, 700);
 }
 
 // ── Stage 2: Chat ─────────────────────────────────────────────
 function addMessage(type, html) {
-  const row = document.createElement('div');
-  row.className = `msg-row ${type}`;
-  row.innerHTML = `<div class="msg-bubble">${html}</div>`;
+  var row = document.createElement('div');
+  row.className = 'msg-row ' + type;
+  row.innerHTML = '<div class="msg-bubble">' + html + '</div>';
   chatMessages.appendChild(row);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return row;
 }
 
 function addTyping() {
-  const row = document.createElement('div');
+  var row = document.createElement('div');
   row.className = 'typing-row';
-  row.innerHTML = `<div class="typing-bubble">
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-  </div>`;
+  row.innerHTML = '<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
   chatMessages.appendChild(row);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return row;
 }
 
 function askQuestion(index) {
-  const t = addTyping();
-  setTimeout(() => {
+  chatTextarea.disabled = true;
+  chatSend.disabled = true;
+  var t = addTyping();
+  var delay = 700 + Math.random() * 400;
+  setTimeout(function() {
     t.remove();
     addMessage('system', QUESTIONS[index].prompt(gseId));
     chatTextarea.placeholder = QUESTIONS[index].placeholder;
     chatTextarea.disabled = false;
     chatSend.disabled = false;
     chatTextarea.focus();
-  }, 700 + Math.random() * 400);
+  }, delay);
 }
 
-chatTextarea.addEventListener('keydown', e => {
+chatTextarea.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAnswer(); }
 });
 chatSend.addEventListener('click', sendAnswer);
 
-chatTextarea.addEventListener('input', () => {
+chatTextarea.addEventListener('input', function() {
   chatTextarea.style.height = 'auto';
   chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 120) + 'px';
 });
 
 function sendAnswer() {
-  const val = chatTextarea.value.trim();
+  var val = chatTextarea.value.trim();
   if (!val) return;
   chatTextarea.disabled = true;
   chatSend.disabled = true;
   chatTextarea.value = '';
   chatTextarea.style.height = '';
-
   userAnswers[QUESTIONS[currentQ].id] = val;
   addMessage('user', escHtml(val));
   currentQ++;
-
   if (currentQ < QUESTIONS.length) {
-    setTimeout(() => {
-      chatTextarea.disabled = false;
-      chatSend.disabled = false;
-      askQuestion(currentQ);
-    }, 300);
+    setTimeout(function() { askQuestion(currentQ); }, 300);
   } else {
-    const t = addTyping();
-    setTimeout(() => {
+    var t = addTyping();
+    setTimeout(function() {
       t.remove();
       addMessage('system', 'Got it — generating your pipeline now…');
       setTimeout(beginGeneration, 900);
@@ -916,20 +593,19 @@ function sendAnswer() {
 }
 
 function escHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ── Stage 3: Progress ─────────────────────────────────────────
 function beginGeneration() {
   conceal(chatStage);
-  setTimeout(() => { reveal(progressStage); runSteps(); }, 420);
+  setTimeout(function() { reveal(progressStage); runSteps(); }, 420);
 }
 
 function runSteps() {
-  const steps = Array.from(pSteps);
-  const delays = [900, 1300, 1100, 1500, 950];
-  let i = 0;
-
+  var steps = Array.from(pSteps);
+  var delays = [900, 1300, 1100, 1500, 950];
+  var i = 0;
   function advance() {
     if (i > 0) {
       steps[i-1].classList.remove('active');
@@ -937,201 +613,407 @@ function runSteps() {
       steps[i-1].querySelector('.p-step-icon').textContent = '✓';
     }
     if (i >= steps.length) {
-      setTimeout(() => { conceal(progressStage); setTimeout(showOutput, 420); }, 500);
+      setTimeout(function() { conceal(progressStage); setTimeout(showOutput, 420); }, 500);
       return;
     }
     steps[i].classList.add('active');
-    const pct = parseInt(steps[i].dataset.pct);
+    var pct = parseInt(steps[i].dataset.pct);
     progressBar.style.width = pct + '%';
     progressPct.textContent = pct + '%';
     i++;
-    setTimeout(advance, delays[i-1] ?? 1000);
+    setTimeout(advance, delays[i-1] || 1000);
   }
   advance();
 }
 
 // ── Stage 4: Output ───────────────────────────────────────────
-function showOutput() {
-  const comparison = userAnswers.comparison || 'Case vs. Control';
-  const cellType   = /^y(es)?$/i.test((userAnswers.cell_type || '').trim());
-  const batchRaw   = (userAnswers.batch || '').trim();
-  const batchVar   = /^none?$/i.test(batchRaw) ? null : batchRaw || null;
+var ARRAY_LABELS = {
+  '27K':  'HumanMethylation27 (27K)',
+  '450K': 'HumanMethylation450 (450K)',
+  'EPIC': 'EPIC (850K)',
+};
+var PIPELINE_LABELS = {
+  '27K':  'minfi · bumphunter',
+  '450K': 'ChAMP · DMRcate',
+  'EPIC': 'ChAMP · DMRcate',
+};
 
-  outputDetail.textContent = `${gseId} · EPIC array · ChAMP pipeline`;
-  rawScript = buildScript(gseId, comparison, batchVar, cellType);
+function parseArrayType(answer) {
+  var a = (answer || '').toLowerCase().replace(/[\s,.-]/g, '');
+  if (/27k|27000|hm27|humanmethylation27/.test(a)) return '27K';
+  if (/epic|850k|850000|epicv2/.test(a))           return 'EPIC';
+  return '450K';
+}
+
+function showOutput() {
+  var comparison = userAnswers.comparison || 'Case vs. Control';
+  var arrayType  = parseArrayType(userAnswers.array_type);
+  var cellType   = /^y(es)?$/i.test((userAnswers.cell_type || '').trim());
+  var batchRaw   = (userAnswers.batch || '').trim();
+  var batchVar   = /^none?$/i.test(batchRaw) ? null : (batchRaw || null);
+
+  outputDetail.textContent = gseId + ' · ' + ARRAY_LABELS[arrayType] + ' · ' + PIPELINE_LABELS[arrayType];
+
+  rawScript = buildScript(gseId, comparison, arrayType, batchVar, cellType);
   rCodeOutput.textContent = rawScript;
   hljs.highlightElement(rCodeOutput);
   reveal(outputStage);
 }
 
 // ── R Script builder ──────────────────────────────────────────
-function buildScript(gse, comparison, batchVar, cellType) {
-  const date  = new Date().toISOString().split('T')[0];
-  const parts = comparison.split(/\s*vs\.?\s*/i);
-  const grp1  = (parts[0] || 'Case').trim();
-  const grp2  = (parts[1] || 'Control').trim();
-  const g1    = grp1.replace(/\s+/g, '_');
-  const g2    = grp2.replace(/\s+/g, '_');
-  let   s     = 1;
-  const hdr   = title => {
-    const line = `# --- ${s++}. ${title} `;
-    return line + '-'.repeat(Math.max(2, 66 - line.length));
+function buildScript(gse, comparison, arrayType, batchVar, cellType) {
+  var date  = new Date().toISOString().split('T')[0];
+  var parts = comparison.split(/\s*vs\.?\s*/i);
+  var grp1  = (parts[0] || 'Case').trim();
+  var grp2  = (parts[1] || 'Control').trim();
+  var g1    = grp1.replace(/\s+/g, '_');
+  var g2    = grp2.replace(/\s+/g, '_');
+  var s     = 1;
+
+  function hdr(title) {
+    var line = '# --- ' + s++ + '. ' + title + ' ';
+    var dashes = Math.max(2, 66 - line.length);
+    return line + Array(dashes + 1).join('-');
+  }
+
+  function rep(ch, n) { return Array(n + 1).join(ch); }
+
+  var ARRAY_DESC = {
+    '27K':  'Illumina HumanMethylation27 (27K)',
+    '450K': 'Illumina HumanMethylation450 (450K)',
+    'EPIC': 'Illumina EPIC (850K)',
   };
 
-  return `# ${'='.repeat(64)}
-# DNA Methylation Analysis Pipeline
-# Generated by MethylScript | Piccolo Lab, BYU
-# Series     : ${gse}
-# Comparison : ${grp1} vs. ${grp2}
-# Array      : Illumina EPIC (850K)
-# Date       : ${date}
-# ${'='.repeat(64)}
+  // ── 27K: minfi / bumphunter pipeline ─────────────────────────
+  if (arrayType === '27K') {
+    var lines27 = [
+      '# ' + rep('=', 64),
+      '# DNA Methylation Analysis Pipeline',
+      '# Generated by MethylScript | Piccolo Lab, BYU',
+      '# Series     : ' + gse,
+      '# Comparison : ' + grp1 + ' vs. ' + grp2,
+      '# Array      : ' + ARRAY_DESC['27K'],
+      '# Pipeline   : minfi · bumphunter',
+      '# Date       : ' + date,
+      '# Note       : 27K arrays use all Infinium Type I probes; inter-type',
+      '#              normalization (BMIQ) is unnecessary. bumphunter is',
+      '#              preferred for DMRs given the sparse probe coverage.',
+      '# ' + rep('=', 64),
+      '',
+      hdr('Required Packages'),
+      'packages <- c(',
+      '  "GEOquery",                                    # GEO data retrieval',
+      '  "minfi",                                       # Array processing',
+      '  "IlluminaHumanMethylation27kanno.ilmn12.hg19", # 27K annotation',
+      '  "limma",                                       # Linear modeling',
+      '  "bumphunter",                                  # DMR detection',
+      '  "sva"                                          # SVA / ComBat',
+      ')',
+      '',
+      'for (pkg in packages) {',
+      '  if (!requireNamespace(pkg, quietly = TRUE))',
+      '    BiocManager::install(pkg)',
+      '  library(pkg, character.only = TRUE)',
+      '}',
+      '',
+      hdr('Download Data from GEO'),
+      'gse_obj    <- getGEO("' + gse + '", GSEMatrix = TRUE, getGPL = FALSE)',
+      'pdata      <- pData(gse_obj[[1]])',
+      '',
+      'supp_files <- getGEOSuppFiles("' + gse + '")',
+      'idat_dir   <- file.path("' + gse + '", "IDAT")',
+      'untar(rownames(supp_files)[1], exdir = idat_dir)',
+      'cat("IDAT files extracted to:", idat_dir, "\\n")',
+      '',
+      hdr('Load Raw Data'),
+      'RGset <- read.metharray.exp(idat_dir, force = TRUE)',
+      'cat(sprintf("Loaded %d samples, %d probes\\n", ncol(RGset), nrow(RGset)))',
+      '',
+      hdr('Quality Control'),
+      'MSet_raw <- preprocessRaw(RGset)',
+      'qc       <- getQC(MSet_raw)',
+      'dir.create("QC", showWarnings = FALSE)',
+      'pdf("QC/qc_plots.pdf")',
+      'plotQC(qc)',
+      'densityPlot(getBeta(MSet_raw), sampGroups = pdata$characteristics_ch1,',
+      '            main = "Beta-value density — pre-normalization")',
+      'dev.off()',
+      '',
+      '# Flag low-quality samples (median signal < 10.5 in either channel)',
+      'low_quality <- rownames(qc)[qc$mMed < 10.5 | qc$uMed < 10.5]',
+      'if (length(low_quality) > 0)',
+      '  warning("Low-quality samples flagged: ", paste(low_quality, collapse = ", "))',
+      '',
+      '# Remove probes failing detection p-value in > 5% of samples',
+      'det_p      <- detectionP(RGset)',
+      'keep_probes <- rowMeans(det_p > 0.01) <= 0.05',
+      'cat(sprintf("Probes retained after QC filter: %d / %d\\n",',
+      '            sum(keep_probes), length(keep_probes)))',
+      '',
+      hdr('Normalize (Quantile)'),
+      '# quantile normalization is appropriate for 27K (all Type I probes)',
+      'GRset <- preprocessQuantile(RGset)',
+      'GRset <- mapToGenome(GRset)',
+      'GRset <- GRset[keep_probes, ]',
+      '',
+      hdr('Filter Probes'),
+      '# Remove probes overlapping common SNPs (MAF >= 1%)',
+      'GRset_filt <- dropLociWithSnps(GRset, snpAnno = NULL, maf = 0.01, drop = TRUE)',
+      '',
+      '# Remove sex-chromosome probes',
+      'autosome   <- !as.character(seqnames(GRset_filt)) %in% c("chrX", "chrY")',
+      'GRset_filt <- GRset_filt[autosome, ]',
+      'cat(sprintf("Probes after filtering: %d\\n", nrow(GRset_filt)))',
+      '',
+      'beta_final <- getBeta(GRset_filt)',
+      'M_vals     <- getM(GRset_filt)',
+    ];
 
-${hdr('Required Packages')}
-packages <- c(
-  "GEOquery",             # GEO data retrieval
-  "ChAMP",                # Core methylation pipeline
-  "minfi",                # Low-level IDAT processing
-  "limma",                # Linear modeling for DMPs
-  "DMRcate"               # Differentially methylated regions${cellType ? '\n  "EpiDISH"               # Cell-type deconvolution' : ''}${batchVar ? '\n  "sva"                   # Surrogate variable analysis' : ''}
-)
+    if (batchVar) {
+      lines27.push(
+        '',
+        hdr('Batch Correction (ComBat)'),
+        '# Batch variable: ' + batchVar,
+        'batch  <- factor(pdata[["' + batchVar.split(/\s+/)[0] + '"]])',
+        'mod0   <- model.matrix(~ 1, data = pdata)',
+        'M_vals <- ComBat(dat = M_vals, batch = batch, mod = mod0)'
+      );
+    }
 
-for (pkg in packages) {
-  if (!requireNamespace(pkg, quietly = TRUE))
-    BiocManager::install(pkg)
-  library(pkg, character.only = TRUE)
-}
+    lines27.push(
+      '',
+      hdr('Surrogate Variable Analysis'),
+      'pheno  <- factor(pdata$characteristics_ch1)',
+      'mod    <- model.matrix(~ pheno)',
+      'mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))',
+      'svaobj <- sva(M_vals, mod, mod0)',
+      'svs    <- svaobj$sv',
+      'cat(sprintf("SVA identified %d surrogate variable(s).\\n", ncol(svs)))',
+      '',
+      hdr('Differentially Methylated Positions (' + g1 + ' vs. ' + g2 + ')'),
+      'design <- model.matrix(~ 0 + pheno + svs)',
+      'colnames(design)[1:2] <- c("' + g1 + '", "' + g2 + '")',
+      '',
+      'fit  <- lmFit(M_vals, design)',
+      'cont <- makeContrasts(' + g1 + ' - ' + g2 + ', levels = design)',
+      'fit2 <- contrasts.fit(fit, cont)',
+      'fit2 <- eBayes(fit2)',
+      '',
+      'dmps     <- topTable(fit2, coef = 1, number = Inf, adjust.method = "BH")',
+      'dmps_sig <- subset(dmps, adj.P.Val < 0.05 & abs(logFC) > 0.1)',
+      'cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))',
+      '',
+      hdr('Differentially Methylated Regions (bumphunter)'),
+      '# bumphunter is preferred for 27K due to sparse genome-wide probe density',
+      'designMatrix <- model.matrix(~ pheno + svs)',
+      'set.seed(42)',
+      'dmrs <- bumphunter(',
+      '  object = GRset_filt,',
+      '  design = designMatrix,',
+      '  coef   = 2,',
+      '  B      = 1000,    # permutations for empirical p-values',
+      '  type   = "Beta",',
+      '  cutoff = 0.1,     # minimum mean Beta difference',
+      '  smooth = TRUE',
+      ')',
+      'dmrs_sig <- subset(dmrs$table, p.valueArea < 0.05)',
+      'cat(sprintf("Significant DMRs: %d\\n", nrow(dmrs_sig)))',
+      '',
+      hdr('Save Results'),
+      'dir.create("results", showWarnings = FALSE)',
+      'write.csv(dmps,     "results/all_DMPs.csv",         row.names = TRUE)',
+      'write.csv(dmps_sig, "results/significant_DMPs.csv", row.names = TRUE)',
+      'write.csv(dmrs_sig, "results/significant_DMRs.csv", row.names = FALSE)',
+      'save(GRset_filt, beta_final, dmps, dmrs,',
+      '     file = "results/methylation_workspace.RData")',
+      '',
+      'message("Pipeline complete. Results written to ./results/")'
+    );
 
-${hdr('Download Data from GEO')}
-gse_obj    <- getGEO("${gse}", GSEMatrix = TRUE, getGPL = FALSE)
-pdata      <- pData(gse_obj[[1]])
+    return lines27.join('\n');
+  }
 
-supp_files <- getGEOSuppFiles("${gse}")
-idat_dir   <- file.path("${gse}", "IDAT")
-untar(rownames(supp_files)[1], exdir = idat_dir)
-cat("IDAT files extracted to:", idat_dir, "\\n")
+  // ── 450K / EPIC: ChAMP / DMRcate pipeline ────────────────────
+  var champArray = arrayType === '450K' ? '450K' : 'EPIC';
+  var lines = [
+    '# ' + rep('=', 64),
+    '# DNA Methylation Analysis Pipeline',
+    '# Generated by MethylScript | Piccolo Lab, BYU',
+    '# Series     : ' + gse,
+    '# Comparison : ' + grp1 + ' vs. ' + grp2,
+    '# Array      : ' + ARRAY_DESC[arrayType],
+    '# Pipeline   : ChAMP · DMRcate',
+    '# Date       : ' + date,
+    '# ' + rep('=', 64),
+    '',
+    hdr('Required Packages'),
+    'packages <- c(',
+    '  "GEOquery",             # GEO data retrieval',
+    '  "ChAMP",                # Core methylation pipeline',
+    '  "minfi",                # Low-level IDAT processing',
+    '  "limma",                # Linear modeling for DMPs',
+    '  "DMRcate"               # Differentially methylated regions',
+  ];
 
-${hdr('Load & Filter')}
-myLoad <- champ.load(
-  directory      = idat_dir,
-  arraytype      = "EPIC",
-  filterXY       = TRUE,    # Remove sex-chromosome probes
-  filterSNPs     = TRUE,    # Remove SNP-overlapping probes
-  filterMultiHit = TRUE,    # Remove cross-reactive probes
-  filterNoCG     = TRUE,    # Retain only CpG probes
-  detPcut        = 0.01,    # Detection p-value threshold
-  filterBeads    = TRUE,
-  beadCutoff     = 0.05,
-  pd             = pdata
-)
+  if (cellType) lines.push('  "EpiDISH",              # Cell-type deconvolution');
+  if (batchVar) lines.push('  "sva"                   # Surrogate variable analysis');
 
-${hdr('Quality Control')}
-champ.QC(
-  beta       = myLoad$beta,
-  pheno      = myLoad$pd$Sample_Group,
-  resultsDir = "./ChAMP_QC"
-)
+  lines.push(
+    ')',
+    '',
+    'for (pkg in packages) {',
+    '  if (!requireNamespace(pkg, quietly = TRUE))',
+    '    BiocManager::install(pkg)',
+    '  library(pkg, character.only = TRUE)',
+    '}',
+    '',
+    hdr('Download Data from GEO'),
+    'gse_obj    <- getGEO("' + gse + '", GSEMatrix = TRUE, getGPL = FALSE)',
+    'pdata      <- pData(gse_obj[[1]])',
+    '',
+    'supp_files <- getGEOSuppFiles("' + gse + '")',
+    'idat_dir   <- file.path("' + gse + '", "IDAT")',
+    'untar(rownames(supp_files)[1], exdir = idat_dir)',
+    'cat("IDAT files extracted to:", idat_dir, "\\n")',
+    '',
+    hdr('Load & Filter'),
+    'myLoad <- champ.load(',
+    '  directory      = idat_dir,',
+    '  arraytype      = "' + champArray + '",',
+    '  filterXY       = TRUE,    # Remove sex-chromosome probes',
+    '  filterSNPs     = TRUE,    # Remove SNP-overlapping probes',
+    '  filterMultiHit = TRUE,    # Remove cross-reactive probes',
+    '  filterNoCG     = TRUE,    # Retain only CpG probes',
+    '  detPcut        = 0.01,    # Detection p-value threshold',
+    '  filterBeads    = TRUE,',
+    '  beadCutoff     = 0.05,',
+    '  pd             = pdata',
+    ')',
+    '',
+    hdr('Quality Control'),
+    'champ.QC(',
+    '  beta       = myLoad$beta,',
+    '  pheno      = myLoad$pd$Sample_Group,',
+    '  resultsDir = "./ChAMP_QC"',
+    ')',
+    '',
+    hdr('Normalization (BMIQ)'),
+    'myNorm <- champ.norm(',
+    '  beta       = myLoad$beta,',
+    '  arraytype  = "' + champArray + '",',
+    '  method     = "BMIQ",      # Corrects Infinium Type I/II bias',
+    '  plotBMIQ   = FALSE,',
+    '  resultsDir = "./ChAMP_Norm"',
+    ')'
+  );
 
-${hdr('Normalization (BMIQ)')}
-myNorm <- champ.norm(
-  beta       = myLoad$beta,
-  arraytype  = "EPIC",
-  method     = "BMIQ",      # Corrects Infinium Type I/II bias
-  plotBMIQ   = FALSE,
-  resultsDir = "./ChAMP_Norm"
-)
-${cellType ? `
-${hdr('Cell-Type Deconvolution')}
-# Estimate blood cell fractions to include as model covariates
-RGset       <- read.metharray.exp(idat_dir)
-cell_counts <- epidish(
-  beta.m  = myNorm,
-  ref.m   = centEpigenomics,
-  method  = "RPC"
-)$estF
-pdata <- cbind(pdata, cell_counts)
-` : ''}${batchVar ? `
-${hdr('Batch Correction (ComBat)')}
-# Batch variable identified: ${batchVar}
-myComBat <- champ.runCombat(
-  beta      = myNorm,
-  pd        = myLoad$pd,
-  batchname = c("${batchVar.split(/\s+/)[0]}")
-)
-beta_final <- myComBat
-` : `
-${hdr('Finalize Beta Matrix')}
-beta_final <- myNorm
-`}
-${hdr('Surrogate Variable Analysis')}
-M_vals <- logit2(beta_final)
-pheno  <- factor(pdata$Sample_Group)
-mod    <- model.matrix(~ pheno)
-mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))
-svaobj <- sva(M_vals, mod, mod0)
-svs    <- svaobj$sv
-cat(sprintf("SVA identified %d surrogate variable(s).\\n", ncol(svs)))
+  if (cellType) {
+    lines.push(
+      '',
+      hdr('Cell-Type Deconvolution'),
+      '# Estimate blood cell fractions to include as model covariates',
+      'RGset       <- read.metharray.exp(idat_dir)',
+      'cell_counts <- epidish(',
+      '  beta.m  = myNorm,',
+      '  ref.m   = centEpigenomics,',
+      '  method  = "RPC"',
+      ')$estF',
+      'pdata <- cbind(pdata, cell_counts)'
+    );
+  }
 
-${hdr(`Differentially Methylated Positions (${g1} vs. ${g2})`)}
-design <- model.matrix(
-  ~ 0 + pheno${cellType ? ' + cell_counts' : ''} + svs
-)
-colnames(design)[1:2] <- c("${g1}", "${g2}")
+  if (batchVar) {
+    lines.push(
+      '',
+      hdr('Batch Correction (ComBat)'),
+      '# Batch variable: ' + batchVar,
+      'myComBat <- champ.runCombat(',
+      '  beta      = myNorm,',
+      '  pd        = myLoad$pd,',
+      '  batchname = c("' + batchVar.split(/\s+/)[0] + '")',
+      ')',
+      'beta_final <- myComBat'
+    );
+  } else {
+    lines.push(
+      '',
+      hdr('Finalize Beta Matrix'),
+      'beta_final <- myNorm'
+    );
+  }
 
-fit  <- lmFit(M_vals, design)
-cont <- makeContrasts(${g1} - ${g2}, levels = design)
-fit2 <- contrasts.fit(fit, cont)
-fit2 <- eBayes(fit2)
+  lines.push(
+    '',
+    hdr('Surrogate Variable Analysis'),
+    'M_vals <- logit2(beta_final)',
+    'pheno  <- factor(pdata$Sample_Group)',
+    'mod    <- model.matrix(~ pheno)',
+    'mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))',
+    'svaobj <- sva(M_vals, mod, mod0)',
+    'svs    <- svaobj$sv',
+    'cat(sprintf("SVA identified %d surrogate variable(s).\\n", ncol(svs)))',
+    '',
+    hdr('Differentially Methylated Positions (' + g1 + ' vs. ' + g2 + ')'),
+    'design <- model.matrix(',
+    '  ~ 0 + pheno' + (cellType ? ' + cell_counts' : '') + ' + svs',
+    ')',
+    'colnames(design)[1:2] <- c("' + g1 + '", "' + g2 + '")',
+    '',
+    'fit  <- lmFit(M_vals, design)',
+    'cont <- makeContrasts(' + g1 + ' - ' + g2 + ', levels = design)',
+    'fit2 <- contrasts.fit(fit, cont)',
+    'fit2 <- eBayes(fit2)',
+    '',
+    'dmps     <- topTable(fit2, coef = 1, number = Inf, adjust.method = "BH")',
+    'dmps_sig <- subset(dmps, adj.P.Val < 0.05 & abs(logFC) > 0.1)',
+    'cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))',
+    '',
+    hdr('Differentially Methylated Regions (DMRcate)'),
+    'annot <- cpg.annotate(',
+    '  datatype      = "array",',
+    '  object        = M_vals,',
+    '  what          = "M",',
+    '  arraytype     = "' + champArray + '",',
+    '  analysis.type = "differential",',
+    '  design        = design,',
+    '  coef          = 2',
+    ')',
+    'dmrs       <- dmrcate(annot, lambda = 1000, C = 2)',
+    'dmr_ranges <- extractRanges(dmrs, genome = "hg38")',
+    'cat(sprintf("Differentially methylated regions: %d\\n", length(dmr_ranges)))',
+    '',
+    hdr('Save Results'),
+    'dir.create("results", showWarnings = FALSE)',
+    'write.csv(dmps,                      "results/all_DMPs.csv",         row.names = TRUE)',
+    'write.csv(dmps_sig,                  "results/significant_DMPs.csv", row.names = TRUE)',
+    'write.csv(as.data.frame(dmr_ranges), "results/DMRs.csv",             row.names = FALSE)',
+    'save(beta_final, dmps, dmr_ranges,   file = "results/methylation_workspace.RData")',
+    '',
+    'message("Pipeline complete. Results written to ./results/")'
+  );
 
-dmps     <- topTable(fit2, coef = 1, number = Inf, adjust.method = "BH")
-dmps_sig <- subset(dmps, adj.P.Val < 0.05 & abs(logFC) > 0.1)
-cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))
-
-${hdr('Differentially Methylated Regions')}
-annot <- cpg.annotate(
-  datatype      = "array",
-  object        = M_vals,
-  what          = "M",
-  arraytype     = "EPIC",
-  analysis.type = "differential",
-  design        = design,
-  coef          = 2
-)
-dmrs       <- dmrcate(annot, lambda = 1000, C = 2)
-dmr_ranges <- extractRanges(dmrs, genome = "hg38")
-cat(sprintf("Differentially methylated regions: %d\\n", length(dmr_ranges)))
-
-${hdr('Save Results')}
-dir.create("results", showWarnings = FALSE)
-write.csv(dmps,                      "results/all_DMPs.csv",         row.names = TRUE)
-write.csv(dmps_sig,                  "results/significant_DMPs.csv", row.names = TRUE)
-write.csv(as.data.frame(dmr_ranges), "results/DMRs.csv",             row.names = FALSE)
-save(beta_final, dmps, dmr_ranges,   file = "results/methylation_workspace.RData")
-
-message("Pipeline complete. Results written to ./results/")
-`;
+  return lines.join('\n');
 }
 
 // ── Copy / Save ───────────────────────────────────────────────
-btnCopy.addEventListener('click', () => {
-  navigator.clipboard.writeText(rawScript).then(() => {
+btnCopy.addEventListener('click', function() {
+  navigator.clipboard.writeText(rawScript).then(function() {
     btnCopy.classList.add('copied');
-    const orig = btnCopy.innerHTML;
+    var orig = btnCopy.innerHTML;
     btnCopy.innerHTML = orig.replace('Copy', 'Copied!');
-    setTimeout(() => {
+    setTimeout(function() {
       btnCopy.classList.remove('copied');
       btnCopy.innerHTML = orig;
     }, 2000);
   });
 });
 
-btnSave.addEventListener('click', () => {
-  const blob = new Blob([rawScript], { type: 'text/plain' });
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement('a'), {
-    href: url,
-    download: `methylation_pipeline_${gseId}.R`,
-  });
+btnSave.addEventListener('click', function() {
+  var blob = new Blob([rawScript], { type: 'text/plain' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'methylation_pipeline_' + gseId + '.R';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
