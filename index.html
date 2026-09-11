@@ -319,7 +319,6 @@ main { max-width: 680px; margin: 0 auto; }
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo-mark">
     <div class="logo-icon">
@@ -432,45 +431,28 @@ main { max-width: 680px; margin: 0 auto; }
 
 <script>
 // ── State ────────────────────────────────────────────────────
-let gseId = '';
-let userAnswers = {};
-let currentQ = 0;
-let rawScript = '';
+var gseId        = '';
+var detectedMeta = null;   // populated from GEO fetch
+var confirmedMeta = {};    // {arrayType, dataFile, methGroup, unmethGroup}
+var QUESTIONS    = [];     // built dynamically after fetch
+var currentQ     = 0;
+var rawScript    = '';
 
-const QUESTIONS = [
-  {
-    id: 'comparison',
-    prompt: function(gse) {
-      return 'I found <strong>' + gse + '</strong> in GEO. What is the primary group comparison for this analysis? ' +
-             'For example: <em>"Tumor vs. Normal"</em> or <em>"Treated vs. Control"</em>.';
-    },
-    placeholder: 'e.g. Tumor vs. Normal',
-  },
-  {
-    id: 'array_type',
-    prompt: function() {
-      return 'Which <strong>array platform</strong> was used? This determines the normalization strategy and analysis packages. ' +
-             'Options: <code>27K</code> (HumanMethylation27), <code>450K</code>, or <code>EPIC</code>.';
-    },
-    placeholder: '27K, 450K, or EPIC',
-  },
-  {
-    id: 'cell_type',
-    prompt: function() {
-      return 'Should I include <strong>cell-type deconvolution</strong>? ' +
-             'This adjusts for differences in immune cell composition and is recommended for whole blood or PBMC samples.';
-    },
-    placeholder: 'Yes / No — describe your tissue if helpful',
-  },
-  {
-    id: 'batch',
-    prompt: function() {
-      return 'Are there any <strong>known batch variables</strong> in this dataset (e.g., processing plate, ' +
-             'sentrix slide, collection site) that should be corrected with ComBat?';
-    },
-    placeholder: 'e.g. Plate, or "None"',
-  },
-];
+// GPL accession → array type
+var GPL_MAP = {
+  'GPL8490':  '27K',
+  'GPL13534': '450K',
+  'GPL21145': 'EPIC',
+  'GPL23976': 'EPIC',
+  'GPL28271': 'EPIC',
+};
+var GPL_NAMES = {
+  'GPL8490':  'HumanMethylation27 (GPL8490)',
+  'GPL13534': 'HumanMethylation450 (GPL13534)',
+  'GPL21145': 'MethylationEPIC v1 (GPL21145)',
+  'GPL23976': 'MethylationEPIC (GPL23976)',
+  'GPL28271': 'MethylationEPIC v2 (GPL28271)',
+};
 
 // ── Elements ─────────────────────────────────────────────────
 var inputStage    = document.getElementById('input-stage');
@@ -499,10 +481,125 @@ function reveal(el) {
     requestAnimationFrame(function() { el.classList.add('visible'); });
   });
 }
-
 function conceal(el) {
   el.classList.remove('visible');
   setTimeout(function() { el.classList.remove('show'); }, 380);
+}
+
+// ── GEO / NCBI eUtils helpers ─────────────────────────────────
+var EUTILS = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
+
+function eSearch(term, retmax) {
+  var url = EUTILS + 'esearch.fcgi?db=gds&term=' + encodeURIComponent(term) +
+            '&retmax=' + (retmax || 5) + '&retmode=json';
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+function eSummary(ids) {
+  var idStr = Array.isArray(ids) ? ids.join(',') : String(ids);
+  var url = EUTILS + 'esummary.fcgi?db=gds&id=' + idStr + '&retmode=json';
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+function fileBasename(url) {
+  return (url || '').split('/').pop().split('?')[0];
+}
+
+function detectDataFile(files) {
+  var idat = files.find(function(f) { return /idat/i.test(f); });
+  if (idat) return idat;
+  var tar = files.find(function(f) { return /\.tar\.gz$/i.test(f); });
+  if (tar) return tar;
+  return files[0] || null;
+}
+
+function detectArrayFromText(text) {
+  var t = (text || '').toLowerCase();
+  if (/27k|27,000|humanmethylation27|hm27/.test(t)) return '27K';
+  if (/epic|850k|850,000/.test(t)) return 'EPIC';
+  return '450K';
+}
+
+// Infer sample groups from an array of sample title strings
+function detectGroups(titles) {
+  var methKeywords   = ['methylated','hypermethylated','tumor','cancer','disease','case','treated','positive','affected'];
+  var unmethKeywords = ['unmethylated','hypomethylated','normal','control','healthy','untreated','negative','unaffected'];
+
+  var tokenCounts = {};
+  titles.forEach(function(title) {
+    title.replace(/[_\-.\s]+/g, ' ').trim()
+      .split(/\s+/)
+      .map(function(t) { return t.toLowerCase(); })
+      .filter(function(t) { return t.length > 2 && !/^\d+$/.test(t); })
+      .forEach(function(t) { tokenCounts[t] = (tokenCounts[t] || 0) + 1; });
+  });
+
+  var mToken = methKeywords.find(function(k) { return tokenCounts[k] > 0; });
+  var uToken = unmethKeywords.find(function(k) { return tokenCounts[k] > 0; });
+  if (mToken && uToken) {
+    return { meth: cap(mToken), unmeth: cap(uToken), certain: true };
+  }
+
+  // Fall back: find the two most frequent tokens that each appear in < half the samples
+  var half = Math.ceil(titles.length / 2);
+  var topTwo = Object.keys(tokenCounts)
+    .filter(function(t) { return tokenCounts[t] >= 1 && tokenCounts[t] <= half; })
+    .sort(function(a, b) { return tokenCounts[b] - tokenCounts[a]; })
+    .slice(0, 2);
+
+  if (topTwo.length === 2) {
+    return { meth: cap(topTwo[0]), unmeth: cap(topTwo[1]), certain: false };
+  }
+  return null;
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// Fetch series-level metadata
+function fetchSeriesMeta(gse) {
+  return eSearch(gse + '[ACCN]', 20)
+    .then(function(data) {
+      var ids = ((data.esearchresult || {}).idlist || []);
+      if (!ids.length) throw new Error('Series not found in GEO.');
+      // GSE entries have UIDs prefixed with 200
+      var uid = ids.find(function(id) { return /^200/.test(id); }) || ids[0];
+      return eSummary(uid);
+    })
+    .then(function(data) {
+      var result = data.result || {};
+      var keys = Object.keys(result).filter(function(k) { return k !== 'uids'; });
+      if (!keys.length) throw new Error('Could not load series summary.');
+      var e = result[keys[0]];
+      var gpl = ((e.gpl || '')).toUpperCase();
+      var suppRaw = e.suppfiles || '';
+      var suppFiles = suppRaw.split(/;\s*|\t/).map(function(s) { return s.trim(); }).filter(Boolean);
+      return {
+        gpl:      gpl,
+        gplName:  GPL_NAMES[gpl] || (gpl || 'Unknown platform'),
+        arrayType: GPL_MAP[gpl] || detectArrayFromText(e.title || ''),
+        title:    e.title || gse,
+        suppFiles: suppFiles,
+        dataFile: detectDataFile(suppFiles),
+        nSamples: parseInt(e.n_samples) || 0,
+      };
+    });
+}
+
+// Fetch a handful of sample titles for group detection
+function fetchSampleTitles(gse) {
+  return eSearch(gse + '[ACCN] AND gsm[ETYP]', 12)
+    .then(function(data) {
+      var ids = ((data.esearchresult || {}).idlist || []).slice(0, 12);
+      if (!ids.length) return [];
+      return eSummary(ids);
+    })
+    .then(function(data) {
+      var result = data.result || {};
+      return Object.keys(result)
+        .filter(function(k) { return k !== 'uids' && result[k].title; })
+        .map(function(k) { return result[k].title; });
+    })
+    .catch(function() { return []; });
 }
 
 // ── Stage 1: Series ID ────────────────────────────────────────
@@ -523,7 +620,104 @@ function submitId() {
   seriesInput.disabled = true;
   chatIdLabel.textContent = gseId;
   reveal(chatStage);
-  setTimeout(function() { askQuestion(0); }, 700);
+
+  setTimeout(function() {
+    var typingEl = addTyping();
+    addMessage('system', 'Looking up <strong>' + escHtml(gseId) + '</strong> in GEO — this takes a moment…');
+
+    Promise.all([fetchSeriesMeta(gseId), fetchSampleTitles(gseId)])
+      .then(function(results) {
+        typingEl.remove();
+        detectedMeta = results[0];
+        detectedMeta.groups = detectGroups(results[1]);
+        buildQuestions();
+        setTimeout(function() { askQuestion(0); }, 500);
+      })
+      .catch(function(err) {
+        typingEl.remove();
+        addMessage('system',
+          '⚠️ ' + escHtml(err.message || 'Could not reach GEO.') +
+          '<br><em>No problem — I\'ll ask for the details manually.</em>');
+        detectedMeta = { gpl: null, gplName: null, arrayType: null, dataFile: null, groups: null, suppFiles: [] };
+        buildQuestions();
+        setTimeout(function() { askQuestion(0); }, 700);
+      });
+  }, 500);
+}
+
+// ── Build questions from detected metadata ────────────────────
+function buildQuestions() {
+  var m = detectedMeta;
+  QUESTIONS = [];
+
+  // ── Q1: Array type ──
+  var q1, q1ph;
+  if (m.arrayType) {
+    var fullNames = { '27K': 'HumanMethylation27 (27K)', '450K': 'HumanMethylation450 (450K)', 'EPIC': 'EPIC (850K)' };
+    q1 = 'Based on the platform record (<code>' + escHtml(m.gplName || m.gpl || 'unknown') + '</code>), ' +
+         'I\'ve identified this dataset as the <strong>' + fullNames[m.arrayType] + '</strong> array. ' +
+         'Is that correct? (Reply <code>yes</code> to confirm, or enter <code>27K</code>, <code>450K</code>, or <code>EPIC</code> to correct it.)';
+    q1ph = 'yes · 27K · 450K · EPIC';
+  } else {
+    q1 = 'I wasn\'t able to detect the array platform automatically. ' +
+         'Which array was used? Please enter <code>27K</code>, <code>450K</code>, or <code>EPIC</code>.';
+    q1ph = '27K · 450K · EPIC';
+  }
+  QUESTIONS.push({ id: 'array_type', prompt: q1, placeholder: q1ph, detected: m.arrayType });
+
+  // ── Q2: Data file ──
+  var q2, q2ph;
+  var fname = m.dataFile ? fileBasename(m.dataFile) : null;
+  if (fname) {
+    var isIdat = /idat/i.test(fname);
+    q2 = 'I found the following supplementary file in GEO:<br>' +
+         '<code>' + escHtml(fname) + '</code>' +
+         (isIdat ? '<br><em>This looks like an IDAT archive — the standard raw format for Illumina arrays.</em>' : '');
+    if (m.suppFiles.length > 1) {
+      var others = m.suppFiles.slice(1).map(function(f) { return '<code>' + escHtml(fileBasename(f)) + '</code>'; });
+      q2 += '<br><em>Other files: ' + others.join(', ') + '</em>';
+    }
+    q2 += '<br><br>Should I use this file for the analysis? (Reply <code>yes</code> to confirm, or enter the correct filename.)';
+    q2ph = 'yes · or enter correct filename';
+  } else {
+    q2 = 'I couldn\'t find a supplementary data file for this series. ' +
+         'What is the filename of the data to use? (e.g. <code>GSE12345_RAW.tar.gz</code>)';
+    q2ph = 'e.g. GSE12345_RAW.tar.gz';
+  }
+  QUESTIONS.push({ id: 'data_file', prompt: q2, placeholder: q2ph, detected: fname });
+
+  // ── Q3: Group / column assignment ──
+  var q3, q3ph;
+  var g = m.groups;
+  var hasIdat = fname && /idat/i.test(fname);
+
+  if (g && g.certain) {
+    q3 = (hasIdat
+      ? 'IDAT files handle methylated (Cy5) and unmethylated (Cy3) channels automatically. '
+      : '') +
+      'Based on the sample titles, I\'ve identified two groups:<br>' +
+      '&bull; <strong>' + escHtml(g.meth)   + '</strong> — methylated group<br>' +
+      '&bull; <strong>' + escHtml(g.unmeth) + '</strong> — unmethylated / reference group<br><br>' +
+      'Is that correct? (Reply <code>yes</code> to confirm, or enter as <code>GroupA vs GroupB</code>.)';
+    q3ph = 'yes · or e.g. Tumor vs Normal';
+  } else if (g && !g.certain) {
+    q3 = (hasIdat
+      ? 'IDAT files handle methylated (Cy5) and unmethylated (Cy3) channels automatically. '
+      : '') +
+      'I detected possible sample groups from the titles: ' +
+      '<strong>' + escHtml(g.meth) + '</strong> and <strong>' + escHtml(g.unmeth) + '</strong>. ' +
+      'Which is the methylated group and which is the reference? ' +
+      '(Reply <code>yes</code> if the order above is correct — methylated first — or enter as <code>Methylated vs Unmethylated</code>.)';
+    q3ph = 'yes · or GroupA vs GroupB';
+  } else {
+    q3 = (hasIdat
+      ? 'IDAT files handle methylated (Cy5) and unmethylated (Cy3) channels automatically. '
+      : '') +
+      'I wasn\'t able to identify sample group labels from the metadata. ' +
+      'Please specify the two groups, methylated first: (e.g. <code>Tumor vs Normal</code>)';
+    q3ph = 'e.g. Tumor vs Normal';
+  }
+  QUESTIONS.push({ id: 'column_assign', prompt: q3, placeholder: q3ph, detected: g });
 }
 
 // ── Stage 2: Chat ─────────────────────────────────────────────
@@ -549,15 +743,14 @@ function askQuestion(index) {
   chatTextarea.disabled = true;
   chatSend.disabled = true;
   var t = addTyping();
-  var delay = 700 + Math.random() * 400;
   setTimeout(function() {
     t.remove();
-    addMessage('system', QUESTIONS[index].prompt(gseId));
+    addMessage('system', QUESTIONS[index].prompt);
     chatTextarea.placeholder = QUESTIONS[index].placeholder;
     chatTextarea.disabled = false;
     chatSend.disabled = false;
     chatTextarea.focus();
-  }, delay);
+  }, 600 + Math.random() * 300);
 }
 
 chatTextarea.addEventListener('keydown', function(e) {
@@ -577,23 +770,52 @@ function sendAnswer() {
   chatSend.disabled = true;
   chatTextarea.value = '';
   chatTextarea.style.height = '';
-  userAnswers[QUESTIONS[currentQ].id] = val;
+
+  var q       = QUESTIONS[currentQ];
+  var isYes   = /^y(es|ep|eah)?\.?$/i.test(val);
+  var detected = q.detected;
+
+  if (q.id === 'array_type') {
+    confirmedMeta.arrayType = isYes ? (detected || '450K') : parseArrayType(val);
+
+  } else if (q.id === 'data_file') {
+    confirmedMeta.dataFile = isYes ? detected : val;
+
+  } else if (q.id === 'column_assign') {
+    if (isYes && detected) {
+      confirmedMeta.methGroup   = detected.meth;
+      confirmedMeta.unmethGroup = detected.unmeth;
+    } else {
+      var parts = val.split(/\s+vs\.?\s+/i);
+      confirmedMeta.methGroup   = (parts[0] || '').trim() || (detected ? detected.meth  : 'Methylated');
+      confirmedMeta.unmethGroup = (parts[1] || '').trim() || (detected ? detected.unmeth : 'Unmethylated');
+    }
+  }
+
   addMessage('user', escHtml(val));
   currentQ++;
+
   if (currentQ < QUESTIONS.length) {
     setTimeout(function() { askQuestion(currentQ); }, 300);
   } else {
     var t = addTyping();
     setTimeout(function() {
       t.remove();
-      addMessage('system', 'Got it — generating your pipeline now…');
+      addMessage('system', 'Got it — building your pipeline now…');
       setTimeout(beginGeneration, 900);
     }, 600);
   }
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function parseArrayType(answer) {
+  var a = (answer || '').toLowerCase().replace(/[\s,.-]/g, '');
+  if (/27k|27000|hm27|humanmethylation27/.test(a)) return '27K';
+  if (/epic|850k|850000|epicv2/.test(a))           return 'EPIC';
+  return '450K';
 }
 
 // ── Stage 3: Progress ─────────────────────────────────────────
@@ -603,7 +825,7 @@ function beginGeneration() {
 }
 
 function runSteps() {
-  var steps = Array.from(pSteps);
+  var steps  = Array.from(pSteps);
   var delays = [900, 1300, 1100, 1500, 950];
   var i = 0;
   function advance() {
@@ -638,44 +860,31 @@ var PIPELINE_LABELS = {
   'EPIC': 'ChAMP · DMRcate',
 };
 
-function parseArrayType(answer) {
-  var a = (answer || '').toLowerCase().replace(/[\s,.-]/g, '');
-  if (/27k|27000|hm27|humanmethylation27/.test(a)) return '27K';
-  if (/epic|850k|850000|epicv2/.test(a))           return 'EPIC';
-  return '450K';
-}
-
 function showOutput() {
-  var comparison = userAnswers.comparison || 'Case vs. Control';
-  var arrayType  = parseArrayType(userAnswers.array_type);
-  var cellType   = /^y(es)?$/i.test((userAnswers.cell_type || '').trim());
-  var batchRaw   = (userAnswers.batch || '').trim();
-  var batchVar   = /^none?$/i.test(batchRaw) ? null : (batchRaw || null);
+  var arrayType   = confirmedMeta.arrayType   || '450K';
+  var methGroup   = confirmedMeta.methGroup   || 'Methylated';
+  var unmethGroup = confirmedMeta.unmethGroup || 'Unmethylated';
+  var dataFile    = confirmedMeta.dataFile    || null;
 
   outputDetail.textContent = gseId + ' · ' + ARRAY_LABELS[arrayType] + ' · ' + PIPELINE_LABELS[arrayType];
 
-  rawScript = buildScript(gseId, comparison, arrayType, batchVar, cellType);
+  rawScript = buildScript(gseId, methGroup, unmethGroup, arrayType, dataFile);
   rCodeOutput.textContent = rawScript;
   hljs.highlightElement(rCodeOutput);
   reveal(outputStage);
 }
 
 // ── R Script builder ──────────────────────────────────────────
-function buildScript(gse, comparison, arrayType, batchVar, cellType) {
-  var date  = new Date().toISOString().split('T')[0];
-  var parts = comparison.split(/\s*vs\.?\s*/i);
-  var grp1  = (parts[0] || 'Case').trim();
-  var grp2  = (parts[1] || 'Control').trim();
-  var g1    = grp1.replace(/\s+/g, '_');
-  var g2    = grp2.replace(/\s+/g, '_');
-  var s     = 1;
+function buildScript(gse, methGroup, unmethGroup, arrayType, dataFile) {
+  var date = new Date().toISOString().split('T')[0];
+  var g1   = methGroup.replace(/\s+/g, '_');
+  var g2   = unmethGroup.replace(/\s+/g, '_');
+  var s    = 1;
 
   function hdr(title) {
     var line = '# --- ' + s++ + '. ' + title + ' ';
-    var dashes = Math.max(2, 66 - line.length);
-    return line + Array(dashes + 1).join('-');
+    return line + Array(Math.max(2, 66 - line.length) + 1).join('-');
   }
-
   function rep(ch, n) { return Array(n + 1).join(ch); }
 
   var ARRAY_DESC = {
@@ -684,20 +893,57 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
     'EPIC': 'Illumina EPIC (850K)',
   };
 
-  // ── 27K: minfi / bumphunter pipeline ─────────────────────────
-  if (arrayType === '27K') {
-    var lines27 = [
+  // Shared group-assignment block used in both pipelines
+  var groupBlock = [
+    hdr('Define Sample Groups'),
+    '# ' + methGroup + ' = methylated group | ' + unmethGroup + ' = unmethylated / reference',
+    '# Inspect pdata to confirm the right characteristics column:',
+    'print(head(pdata[, grep("characteristics", colnames(pdata), value = TRUE)]))',
+    '',
+    '# Adjust group_col to the column containing your group labels:',
+    'group_col <- "characteristics_ch1"    # ← update if needed',
+    'pdata$SampleGroup <- ifelse(',
+    '  grepl("' + methGroup + '", pdata[[group_col]], ignore.case = TRUE),',
+    '  "' + methGroup + '", "' + unmethGroup + '"',
+    ')',
+    'pdata$SampleGroup <- factor(pdata$SampleGroup,',
+    '  levels = c("' + unmethGroup + '", "' + methGroup + '"))',
+  ];
+
+  function headerBlock(pipeline) {
+    var lines = [
       '# ' + rep('=', 64),
       '# DNA Methylation Analysis Pipeline',
       '# Generated by MethylScript | Piccolo Lab, BYU',
       '# Series     : ' + gse,
-      '# Comparison : ' + grp1 + ' vs. ' + grp2,
-      '# Array      : ' + ARRAY_DESC['27K'],
-      '# Pipeline   : minfi · bumphunter',
+      '# Comparison : ' + methGroup + ' vs. ' + unmethGroup,
+      '# Array      : ' + ARRAY_DESC[arrayType],
+      '# Pipeline   : ' + pipeline,
       '# Date       : ' + date,
-      '# Note       : 27K arrays use all Infinium Type I probes; inter-type',
-      '#              normalization (BMIQ) is unnecessary. bumphunter is',
-      '#              preferred for DMRs given the sparse probe coverage.',
+    ];
+    if (dataFile) lines.push('# Data file  : ' + dataFile);
+    lines.push('# ' + rep('=', 64));
+    return lines;
+  }
+
+  function geoDownloadBlock() {
+    return [
+      hdr('Download Data from GEO'),
+      'gse_obj    <- getGEO("' + gse + '", GSEMatrix = TRUE, getGPL = FALSE)',
+      'pdata      <- pData(gse_obj[[1]])',
+      '',
+      'supp_files <- getGEOSuppFiles("' + gse + '")',
+      'idat_dir   <- file.path("' + gse + '", "IDAT")',
+      'untar(rownames(supp_files)[1], exdir = idat_dir)',
+      'cat("IDAT files extracted to:", idat_dir, "\\n")',
+    ];
+  }
+
+  // ── 27K: minfi / bumphunter ───────────────────────────────────
+  if (arrayType === '27K') {
+    return headerBlock('minfi · bumphunter').concat([
+      '# Note       : 27K arrays are all Infinium Type I; BMIQ is unnecessary.',
+      '#              bumphunter is preferred for DMRs (sparse probe density).',
       '# ' + rep('=', 64),
       '',
       hdr('Required Packages'),
@@ -707,7 +953,7 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
       '  "IlluminaHumanMethylation27kanno.ilmn12.hg19", # 27K annotation',
       '  "limma",                                       # Linear modeling',
       '  "bumphunter",                                  # DMR detection',
-      '  "sva"                                          # SVA / ComBat',
+      '  "sva"                                          # Surrogate variables',
       ')',
       '',
       'for (pkg in packages) {',
@@ -716,14 +962,9 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
       '  library(pkg, character.only = TRUE)',
       '}',
       '',
-      hdr('Download Data from GEO'),
-      'gse_obj    <- getGEO("' + gse + '", GSEMatrix = TRUE, getGPL = FALSE)',
-      'pdata      <- pData(gse_obj[[1]])',
+    ], geoDownloadBlock(), [
       '',
-      'supp_files <- getGEOSuppFiles("' + gse + '")',
-      'idat_dir   <- file.path("' + gse + '", "IDAT")',
-      'untar(rownames(supp_files)[1], exdir = idat_dir)',
-      'cat("IDAT files extracted to:", idat_dir, "\\n")',
+    ], groupBlock, [
       '',
       hdr('Load Raw Data'),
       'RGset <- read.metharray.exp(idat_dir, force = TRUE)',
@@ -735,62 +976,44 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
       'dir.create("QC", showWarnings = FALSE)',
       'pdf("QC/qc_plots.pdf")',
       'plotQC(qc)',
-      'densityPlot(getBeta(MSet_raw), sampGroups = pdata$characteristics_ch1,',
+      'densityPlot(getBeta(MSet_raw), sampGroups = pdata$SampleGroup,',
       '            main = "Beta-value density — pre-normalization")',
       'dev.off()',
       '',
-      '# Flag low-quality samples (median signal < 10.5 in either channel)',
+      '# Flag low-quality samples (median signal < 10.5)',
       'low_quality <- rownames(qc)[qc$mMed < 10.5 | qc$uMed < 10.5]',
       'if (length(low_quality) > 0)',
-      '  warning("Low-quality samples flagged: ", paste(low_quality, collapse = ", "))',
+      '  warning("Low-quality samples: ", paste(low_quality, collapse = ", "))',
       '',
       '# Remove probes failing detection p-value in > 5% of samples',
-      'det_p      <- detectionP(RGset)',
+      'det_p       <- detectionP(RGset)',
       'keep_probes <- rowMeans(det_p > 0.01) <= 0.05',
-      'cat(sprintf("Probes retained after QC filter: %d / %d\\n",',
+      'cat(sprintf("Probes retained after QC: %d / %d\\n",',
       '            sum(keep_probes), length(keep_probes)))',
       '',
-      hdr('Normalize (Quantile)'),
-      '# quantile normalization is appropriate for 27K (all Type I probes)',
+      hdr('Normalize (Quantile — appropriate for all-Type-I 27K)'),
       'GRset <- preprocessQuantile(RGset)',
       'GRset <- mapToGenome(GRset)',
       'GRset <- GRset[keep_probes, ]',
       '',
       hdr('Filter Probes'),
-      '# Remove probes overlapping common SNPs (MAF >= 1%)',
       'GRset_filt <- dropLociWithSnps(GRset, snpAnno = NULL, maf = 0.01, drop = TRUE)',
-      '',
-      '# Remove sex-chromosome probes',
       'autosome   <- !as.character(seqnames(GRset_filt)) %in% c("chrX", "chrY")',
       'GRset_filt <- GRset_filt[autosome, ]',
       'cat(sprintf("Probes after filtering: %d\\n", nrow(GRset_filt)))',
       '',
       'beta_final <- getBeta(GRset_filt)',
       'M_vals     <- getM(GRset_filt)',
-    ];
-
-    if (batchVar) {
-      lines27.push(
-        '',
-        hdr('Batch Correction (ComBat)'),
-        '# Batch variable: ' + batchVar,
-        'batch  <- factor(pdata[["' + batchVar.split(/\s+/)[0] + '"]])',
-        'mod0   <- model.matrix(~ 1, data = pdata)',
-        'M_vals <- ComBat(dat = M_vals, batch = batch, mod = mod0)'
-      );
-    }
-
-    lines27.push(
       '',
       hdr('Surrogate Variable Analysis'),
-      'pheno  <- factor(pdata$characteristics_ch1)',
+      'pheno  <- pdata$SampleGroup',
       'mod    <- model.matrix(~ pheno)',
       'mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))',
       'svaobj <- sva(M_vals, mod, mod0)',
       'svs    <- svaobj$sv',
-      'cat(sprintf("SVA identified %d surrogate variable(s).\\n", ncol(svs)))',
+      'cat(sprintf("SVA: %d surrogate variable(s) identified.\\n", ncol(svs)))',
       '',
-      hdr('Differentially Methylated Positions (' + g1 + ' vs. ' + g2 + ')'),
+      hdr('Differentially Methylated Positions (' + methGroup + ' vs. ' + unmethGroup + ')'),
       'design <- model.matrix(~ 0 + pheno + svs)',
       'colnames(design)[1:2] <- c("' + g1 + '", "' + g2 + '")',
       '',
@@ -804,14 +1027,13 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
       'cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))',
       '',
       hdr('Differentially Methylated Regions (bumphunter)'),
-      '# bumphunter is preferred for 27K due to sparse genome-wide probe density',
       'designMatrix <- model.matrix(~ pheno + svs)',
       'set.seed(42)',
       'dmrs <- bumphunter(',
       '  object = GRset_filt,',
       '  design = designMatrix,',
       '  coef   = 2,',
-      '  B      = 1000,    # permutations for empirical p-values',
+      '  B      = 1000,    # permutation replicates for empirical p-values',
       '  type   = "Beta",',
       '  cutoff = 0.1,     # minimum mean Beta difference',
       '  smooth = TRUE',
@@ -827,23 +1049,13 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
       'save(GRset_filt, beta_final, dmps, dmrs,',
       '     file = "results/methylation_workspace.RData")',
       '',
-      'message("Pipeline complete. Results written to ./results/")'
-    );
-
-    return lines27.join('\n');
+      'message("Pipeline complete. Results written to ./results/")',
+    ]).join('\n');
   }
 
-  // ── 450K / EPIC: ChAMP / DMRcate pipeline ────────────────────
+  // ── 450K / EPIC: ChAMP / DMRcate ─────────────────────────────
   var champArray = arrayType === '450K' ? '450K' : 'EPIC';
-  var lines = [
-    '# ' + rep('=', 64),
-    '# DNA Methylation Analysis Pipeline',
-    '# Generated by MethylScript | Piccolo Lab, BYU',
-    '# Series     : ' + gse,
-    '# Comparison : ' + grp1 + ' vs. ' + grp2,
-    '# Array      : ' + ARRAY_DESC[arrayType],
-    '# Pipeline   : ChAMP · DMRcate',
-    '# Date       : ' + date,
+  return headerBlock('ChAMP · DMRcate').concat([
     '# ' + rep('=', 64),
     '',
     hdr('Required Packages'),
@@ -852,13 +1064,8 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
     '  "ChAMP",                # Core methylation pipeline',
     '  "minfi",                # Low-level IDAT processing',
     '  "limma",                # Linear modeling for DMPs',
-    '  "DMRcate"               # Differentially methylated regions',
-  ];
-
-  if (cellType) lines.push('  "EpiDISH",              # Cell-type deconvolution');
-  if (batchVar) lines.push('  "sva"                   # Surrogate variable analysis');
-
-  lines.push(
+    '  "DMRcate",              # Differentially methylated regions',
+    '  "sva"                   # Surrogate variable analysis',
     ')',
     '',
     'for (pkg in packages) {',
@@ -867,16 +1074,11 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
     '  library(pkg, character.only = TRUE)',
     '}',
     '',
-    hdr('Download Data from GEO'),
-    'gse_obj    <- getGEO("' + gse + '", GSEMatrix = TRUE, getGPL = FALSE)',
-    'pdata      <- pData(gse_obj[[1]])',
+  ], geoDownloadBlock(), [
     '',
-    'supp_files <- getGEOSuppFiles("' + gse + '")',
-    'idat_dir   <- file.path("' + gse + '", "IDAT")',
-    'untar(rownames(supp_files)[1], exdir = idat_dir)',
-    'cat("IDAT files extracted to:", idat_dir, "\\n")',
+  ], groupBlock, [
     '',
-    hdr('Load & Filter'),
+    hdr('Load & Filter (ChAMP)'),
     'myLoad <- champ.load(',
     '  directory      = idat_dir,',
     '  arraytype      = "' + champArray + '",',
@@ -893,70 +1095,33 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
     hdr('Quality Control'),
     'champ.QC(',
     '  beta       = myLoad$beta,',
-    '  pheno      = myLoad$pd$Sample_Group,',
+    '  pheno      = myLoad$pd$SampleGroup,',
     '  resultsDir = "./ChAMP_QC"',
     ')',
     '',
-    hdr('Normalization (BMIQ)'),
+    hdr('Normalization (BMIQ — corrects Type I/II probe bias)'),
     'myNorm <- champ.norm(',
     '  beta       = myLoad$beta,',
     '  arraytype  = "' + champArray + '",',
-    '  method     = "BMIQ",      # Corrects Infinium Type I/II bias',
+    '  method     = "BMIQ",',
     '  plotBMIQ   = FALSE,',
     '  resultsDir = "./ChAMP_Norm"',
-    ')'
-  );
-
-  if (cellType) {
-    lines.push(
-      '',
-      hdr('Cell-Type Deconvolution'),
-      '# Estimate blood cell fractions to include as model covariates',
-      'RGset       <- read.metharray.exp(idat_dir)',
-      'cell_counts <- epidish(',
-      '  beta.m  = myNorm,',
-      '  ref.m   = centEpigenomics,',
-      '  method  = "RPC"',
-      ')$estF',
-      'pdata <- cbind(pdata, cell_counts)'
-    );
-  }
-
-  if (batchVar) {
-    lines.push(
-      '',
-      hdr('Batch Correction (ComBat)'),
-      '# Batch variable: ' + batchVar,
-      'myComBat <- champ.runCombat(',
-      '  beta      = myNorm,',
-      '  pd        = myLoad$pd,',
-      '  batchname = c("' + batchVar.split(/\s+/)[0] + '")',
-      ')',
-      'beta_final <- myComBat'
-    );
-  } else {
-    lines.push(
-      '',
-      hdr('Finalize Beta Matrix'),
-      'beta_final <- myNorm'
-    );
-  }
-
-  lines.push(
+    ')',
+    '',
+    hdr('Finalize Beta Matrix'),
+    'beta_final <- myNorm',
     '',
     hdr('Surrogate Variable Analysis'),
     'M_vals <- logit2(beta_final)',
-    'pheno  <- factor(pdata$Sample_Group)',
+    'pheno  <- factor(pdata$SampleGroup)',
     'mod    <- model.matrix(~ pheno)',
     'mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))',
     'svaobj <- sva(M_vals, mod, mod0)',
     'svs    <- svaobj$sv',
-    'cat(sprintf("SVA identified %d surrogate variable(s).\\n", ncol(svs)))',
+    'cat(sprintf("SVA: %d surrogate variable(s) identified.\\n", ncol(svs)))',
     '',
-    hdr('Differentially Methylated Positions (' + g1 + ' vs. ' + g2 + ')'),
-    'design <- model.matrix(',
-    '  ~ 0 + pheno' + (cellType ? ' + cell_counts' : '') + ' + svs',
-    ')',
+    hdr('Differentially Methylated Positions (' + methGroup + ' vs. ' + unmethGroup + ')'),
+    'design <- model.matrix(~ 0 + pheno + svs)',
     'colnames(design)[1:2] <- c("' + g1 + '", "' + g2 + '")',
     '',
     'fit  <- lmFit(M_vals, design)',
@@ -980,7 +1145,7 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
     ')',
     'dmrs       <- dmrcate(annot, lambda = 1000, C = 2)',
     'dmr_ranges <- extractRanges(dmrs, genome = "hg38")',
-    'cat(sprintf("Differentially methylated regions: %d\\n", length(dmr_ranges)))',
+    'cat(sprintf("DMRs detected: %d\\n", length(dmr_ranges)))',
     '',
     hdr('Save Results'),
     'dir.create("results", showWarnings = FALSE)',
@@ -989,10 +1154,8 @@ function buildScript(gse, comparison, arrayType, batchVar, cellType) {
     'write.csv(as.data.frame(dmr_ranges), "results/DMRs.csv",             row.names = FALSE)',
     'save(beta_final, dmps, dmr_ranges,   file = "results/methylation_workspace.RData")',
     '',
-    'message("Pipeline complete. Results written to ./results/")'
-  );
-
-  return lines.join('\n');
+    'message("Pipeline complete. Results written to ./results/")',
+  ]).join('\n');
 }
 
 // ── Copy / Save ───────────────────────────────────────────────
@@ -1024,6 +1187,5 @@ btnSave.addEventListener('click', function() {
 hljs.configure({ ignoreUnescapedHTML: true });
 seriesInput.focus();
 </script>
-
 </body>
 </html>
