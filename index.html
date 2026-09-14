@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MethylScript</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MethylScript</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -317,8 +317,7 @@ main { max-width: 680px; margin: 0 auto; }
   .chat-pulse, .typing-dot { animation: none; opacity: 1; transform: none; }
 }
 </style>
-</head>
-<body>
+
 <header>
   <div class="logo-mark">
     <div class="logo-icon">
@@ -488,17 +487,25 @@ function conceal(el) {
 
 // ── GEO / NCBI eUtils helpers ─────────────────────────────────
 var EUTILS = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
+// Identifying params improve NCBI rate-limit allowance
+var NCBI_PARAMS = '&tool=methylscript&email=piccololab%40byu.edu';
 
 function eSearch(term, retmax) {
   var url = EUTILS + 'esearch.fcgi?db=gds&term=' + encodeURIComponent(term) +
-            '&retmax=' + (retmax || 5) + '&retmode=json';
-  return fetch(url).then(function(r) { return r.json(); });
+            '&retmax=' + (retmax || 20) + '&retmode=json' + NCBI_PARAMS;
+  return fetch(url).then(function(r) {
+    if (!r.ok) throw new Error('NCBI HTTP ' + r.status + ' on esearch');
+    return r.json();
+  });
 }
 
 function eSummary(ids) {
   var idStr = Array.isArray(ids) ? ids.join(',') : String(ids);
-  var url = EUTILS + 'esummary.fcgi?db=gds&id=' + idStr + '&retmode=json';
-  return fetch(url).then(function(r) { return r.json(); });
+  var url = EUTILS + 'esummary.fcgi?db=gds&id=' + idStr + '&retmode=json' + NCBI_PARAMS;
+  return fetch(url).then(function(r) {
+    if (!r.ok) throw new Error('NCBI HTTP ' + r.status + ' on esummary');
+    return r.json();
+  });
 }
 
 function fileBasename(url) {
@@ -555,51 +562,73 @@ function detectGroups(titles) {
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-// Fetch series-level metadata
-function fetchSeriesMeta(gse) {
-  return eSearch(gse + '[ACCN]', 20)
-    .then(function(data) {
-      var ids = ((data.esearchresult || {}).idlist || []);
-      if (!ids.length) throw new Error('Series not found in GEO.');
-      // GSE entries have UIDs prefixed with 200
-      var uid = ids.find(function(id) { return /^200/.test(id); }) || ids[0];
-      return eSummary(uid);
-    })
-    .then(function(data) {
-      var result = data.result || {};
-      var keys = Object.keys(result).filter(function(k) { return k !== 'uids'; });
-      if (!keys.length) throw new Error('Could not load series summary.');
-      var e = result[keys[0]];
-      var gpl = ((e.gpl || '')).toUpperCase();
-      var suppRaw = e.suppfiles || '';
-      var suppFiles = suppRaw.split(/;\s*|\t/).map(function(s) { return s.trim(); }).filter(Boolean);
-      return {
-        gpl:      gpl,
-        gplName:  GPL_NAMES[gpl] || (gpl || 'Unknown platform'),
-        arrayType: GPL_MAP[gpl] || detectArrayFromText(e.title || ''),
-        title:    e.title || gse,
-        suppFiles: suppFiles,
-        dataFile: detectDataFile(suppFiles),
-        nSamples: parseInt(e.n_samples) || 0,
-      };
-    });
+// Parse a raw eSummary result object into our metadata shape
+function parseSummaryResult(data, gse) {
+  var result = data.result || {};
+  var keys = Object.keys(result).filter(function(k) { return k !== 'uids'; });
+  if (!keys.length) throw new Error('No summary data returned for ' + gse + '.');
+  var e = result[keys[0]];
+  console.log('[MethylScript] eSummary entry keys:', Object.keys(e).join(', '));
+
+  // entrytype should be 'GSE' for a series record
+  if (e.entrytype && e.entrytype !== 'GSE') {
+    throw new Error('UID resolved to a ' + e.entrytype + ' record, not a GSE series.');
+  }
+
+  var gpl = ((e.gpl || '') + '').toUpperCase();
+  // suppfile is singular in NCBI JSON (not suppfiles)
+  var suppRaw = e.suppfile || e.suppfiles || e.Suppfile || '';
+  var suppFiles = suppRaw
+    ? suppRaw.split(/;\s*|\t/).map(function(s) { return s.trim(); }).filter(Boolean)
+    : [];
+  var rawSamples = e.Samples || e.samples || [];
+  var sampleTitles = Array.isArray(rawSamples)
+    ? rawSamples.map(function(s) { return s.Title || s.title || ''; }).filter(Boolean)
+    : [];
+
+  return {
+    gpl:          gpl,
+    gplName:      GPL_NAMES[gpl] || (gpl || 'Unknown platform'),
+    arrayType:    GPL_MAP[gpl] || detectArrayFromText(e.title || ''),
+    title:        e.title || gse,
+    suppFiles:    suppFiles,
+    dataFile:     detectDataFile(suppFiles),
+    nSamples:     parseInt(e.n_samples) || 0,
+    sampleTitles: sampleTitles,
+  };
 }
 
-// Fetch a handful of sample titles for group detection
-function fetchSampleTitles(gse) {
-  return eSearch(gse + '[ACCN] AND gsm[ETYP]', 12)
+// Fetch series-level metadata.
+// Strategy: construct the GDS UID directly (GSE206879 → 200206879) to skip
+// an esearch round-trip, then fall back to esearch if the direct UID fails.
+function fetchSeriesMeta(gse) {
+  console.log('[MethylScript] fetchSeriesMeta:', gse);
+  var numericPart = gse.replace(/^GSE/i, '');
+  var directUid   = '200' + numericPart;  // GDS UIDs for GSE series have "200" prefix
+
+  return eSummary(directUid)
     .then(function(data) {
-      var ids = ((data.esearchresult || {}).idlist || []).slice(0, 12);
-      if (!ids.length) return [];
-      return eSummary(ids);
+      console.log('[MethylScript] direct eSummary ok, uids:', JSON.stringify((data.result || {}).uids));
+      return parseSummaryResult(data, gse);
     })
-    .then(function(data) {
-      var result = data.result || {};
-      return Object.keys(result)
-        .filter(function(k) { return k !== 'uids' && result[k].title; })
-        .map(function(k) { return result[k].title; });
-    })
-    .catch(function() { return []; });
+    .catch(function(firstErr) {
+      // Direct UID failed — fall back to esearch
+      console.warn('[MethylScript] direct eSummary failed (' + firstErr.message + '), trying esearch…');
+      return eSearch(gse + '[ACCN]', 20)
+        .then(function(data) {
+          var ids = ((data.esearchresult || {}).idlist || []);
+          console.log('[MethylScript] esearch ids:', ids);
+          if (!ids.length) {
+            throw new Error('Series ' + gse + ' was not found in GEO. Double-check the accession number.');
+          }
+          // GSE records in GDS have UIDs that start with "200"; prefer those
+          var uid = ids.find(function(id) { return /^200/.test(id); }) || ids[0];
+          return eSummary(uid);
+        })
+        .then(function(data) {
+          return parseSummaryResult(data, gse);
+        });
+    });
 }
 
 // ── Stage 1: Series ID ────────────────────────────────────────
@@ -625,20 +654,26 @@ function submitId() {
     var typingEl = addTyping();
     addMessage('system', 'Looking up <strong>' + escHtml(gseId) + '</strong> in GEO — this takes a moment…');
 
-    Promise.all([fetchSeriesMeta(gseId), fetchSampleTitles(gseId)])
-      .then(function(results) {
+    fetchSeriesMeta(gseId)
+      .then(function(meta) {
         typingEl.remove();
-        detectedMeta = results[0];
-        detectedMeta.groups = detectGroups(results[1]);
+        detectedMeta = meta;
+        // Sample titles come directly from the series esummary Samples array
+        detectedMeta.groups = meta.sampleTitles.length
+          ? detectGroups(meta.sampleTitles)
+          : null;
         buildQuestions();
         setTimeout(function() { askQuestion(0); }, 500);
       })
       .catch(function(err) {
         typingEl.remove();
+        console.error('[MethylScript] fetch failed:', err);
+        var detail = err.message || 'Network error';
         addMessage('system',
-          '⚠️ ' + escHtml(err.message || 'Could not reach GEO.') +
-          '<br><em>No problem — I\'ll ask for the details manually.</em>');
-        detectedMeta = { gpl: null, gplName: null, arrayType: null, dataFile: null, groups: null, suppFiles: [] };
+          '⚠️ <strong>GEO lookup failed:</strong> <code>' + escHtml(detail) + '</code>' +
+          '<br><em>No problem — I\'ll ask for the details manually. ' +
+          '(If you\'re opening this from the Artifact link, try the local <code>index.html</code> file instead — external requests are blocked on claude.ai.)</em>');
+        detectedMeta = { gpl: null, gplName: null, arrayType: null, dataFile: null, groups: null, suppFiles: [], sampleTitles: [] };
         buildQuestions();
         setTimeout(function() { askQuestion(0); }, 700);
       });
@@ -1187,5 +1222,8 @@ btnSave.addEventListener('click', function() {
 hljs.configure({ ignoreUnescapedHTML: true });
 seriesInput.focus();
 </script>
+
+</head>
+<body>
 </body>
 </html>
