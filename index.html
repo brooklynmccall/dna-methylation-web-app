@@ -464,17 +464,33 @@ function parseSummary(data, gse) {
   if(!keys.length) throw new Error(gse+' not found in GEO.');
   var e=res[keys[0]];
   if(e.entrytype&&e.entrytype!=='GSE') throw new Error('UID resolved to '+e.entrytype+', not a GSE series.');
-  // Try multiple field names — NCBI is inconsistent across dataset types
+
+  // GPL — NCBI may return just a number ("13534") or with prefix ("GPL13534")
   var rawGpl = e.gpl || e.GPL || e.platform || e.platforms || '';
   var gpl = normalizeGpl(rawGpl);
-  var suppRaw=e.suppfile||e.Suppfile||e.suppfiles||'';
-  var suppFiles=suppRaw?suppRaw.split(/;\s*|\t/).map(function(s){return s.trim();}).filter(Boolean):[];
+
+  // suppfile is a comma/semicolon/tab type list like "CSV, IDAT" — split on all
+  var suppRaw = e.suppfile || e.Suppfile || e.suppfiles || '';
+  var suppFiles = suppRaw
+    ? suppRaw.split(/[;,\t]\s*/).map(function(s){return s.trim();}).filter(Boolean)
+    : [];
+
+  // The esummary response includes a full samples array with accession + title
+  var ncbiSamples = Array.isArray(e.samples)
+    ? e.samples.map(function(s){ return {gsm: s.accession||'', title: s.title||''}; })
+    : [];
+  var nSamples = ncbiSamples.length || parseInt(e.n_samples) || 0;
+
+  // PubMed IDs
+  var pubmed = Array.isArray(e.pubmedids) ? e.pubmedids.filter(Boolean) : [];
+
   return {
-    gpl:gpl, gplName:GPL_NAME[gpl]||(gpl||'Unknown platform'),
+    gpl:gpl, gplName:GPL_NAME[gpl]||(gpl?gpl:'Unknown platform'),
     arrType:GPL_TYPE[gpl]||null,
     title:e.title||gse, summary:e.summary||'',
-    organism:e.taxon||'', nSamples:parseInt(e.n_samples)||0,
-    suppFiles:suppFiles,
+    organism:e.taxon||'',
+    nSamples:nSamples, ncbiSamples:ncbiSamples,
+    suppFiles:suppFiles, pubmed:pubmed,
   };
 }
 function fetchNCBIMeta(gse) {
@@ -973,17 +989,34 @@ function onGseSubmit(gse) {
 
 function onStudyFetched(meta) {
   S.phase='CONFIRM_STUDY';
-  var html=[
-    '<p>I found this study in GEO:</p>',
-    '<table class="meta-tbl">',
-    '<tr><td>Title</td><td><strong>'+esc(meta.title)+'</strong></td></tr>',
-    '<tr><td>Array platform</td><td>'+esc(meta.gplName||(meta.gpl?meta.gpl+' (unrecognized)':'—'))+'</td></tr>',
-    '<tr><td>Samples</td><td>'+esc(meta.nSamples>0?meta.nSamples:'—')+'</td></tr>',
-    meta.organism?'<tr><td>Organism</td><td>'+esc(meta.organism)+'</td></tr>':'',
-    '</table>',
-    '<p>Does this look right?</p>',
-  ].join('');
-  addMsg('system',html);
+  var parts = ['<p>I found this study in GEO:</p>'];
+  parts.push('<table class="meta-tbl">');
+  parts.push('<tr><td>Title</td><td><strong>'+esc(meta.title)+'</strong></td></tr>');
+  parts.push('<tr><td>Platform</td><td>'+esc(meta.gplName||(meta.gpl?meta.gpl:'—'))+'</td></tr>');
+  if(meta.organism) parts.push('<tr><td>Organism</td><td>'+esc(meta.organism)+'</td></tr>');
+  parts.push('<tr><td>Samples</td><td>'+esc(meta.nSamples>0?meta.nSamples:'—')+'</td></tr>');
+  if(meta.suppFiles.length) parts.push('<tr><td>Supp. files</td><td>'+esc(meta.suppFiles.join(', '))+'</td></tr>');
+  if(meta.pubmed.length) parts.push('<tr><td>PubMed</td><td>'+meta.pubmed.map(function(id){return '<a href="https://pubmed.ncbi.nlm.nih.gov/'+esc(id)+'/" target="_blank">'+esc(id)+'</a>';}).join(', ')+'</td></tr>');
+  parts.push('</table>');
+
+  // Show sample chips if we have them from esummary
+  if(meta.ncbiSamples.length>0){
+    parts.push('<p style="margin-top:10px;">Samples:</p>');
+    var show = Math.min(meta.ncbiSamples.length, 24);
+    var chips = '<div class="chips">';
+    for(var i=0;i<show;i++) chips += '<span class="chip">'+esc(meta.ncbiSamples[i].gsm)+'</span>';
+    if(meta.ncbiSamples.length>24) chips += '<span class="chip">+'+(meta.ncbiSamples.length-24)+' more</span>';
+    chips += '</div>';
+    parts.push(chips);
+  }
+
+  if(meta.summary){
+    var brief = meta.summary.length>300 ? meta.summary.slice(0,300)+'…' : meta.summary;
+    parts.push('<p style="margin-top:10px;font-size:13px;color:var(--text-2);">'+esc(brief)+'</p>');
+  }
+  parts.push('<p style="margin-top:10px;">Does this look right?</p>');
+
+  addMsg('system', parts.join(''));
   showBtns([
     {label:'✓  Yes, that\'s right', primary:true, fn:onStudyYes},
     {label:'✗  Wrong study',        fn:onStudyNo},
