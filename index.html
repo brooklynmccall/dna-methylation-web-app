@@ -446,12 +446,27 @@ function eSearch(term) {
   return fetch(EUTILS+'esearch.fcgi?db=gds&term='+encodeURIComponent(term)+'&retmax=20&retmode=json'+NCBI_P)
     .then(function(r){ if(!r.ok) throw new Error('NCBI HTTP '+r.status); return r.json(); });
 }
+function normalizeGpl(raw) {
+  if (!raw) return '';
+  // Handle array (multi-platform studies)
+  if (Array.isArray(raw)) raw = raw[0] || '';
+  var s = raw.toString().trim();
+  // Take first token if multiple platforms (space, semicolon, or comma-separated)
+  var first = s.split(/[\s;,]+/).filter(Boolean)[0] || '';
+  if (!first) return '';
+  // Some responses return just the numeric part (e.g. "13534" instead of "GPL13534")
+  if (/^\d+$/.test(first)) return 'GPL' + first;
+  return first.toUpperCase();
+}
+
 function parseSummary(data, gse) {
   var res=data.result||{}, keys=Object.keys(res).filter(function(k){return k!=='uids';});
   if(!keys.length) throw new Error(gse+' not found in GEO.');
   var e=res[keys[0]];
   if(e.entrytype&&e.entrytype!=='GSE') throw new Error('UID resolved to '+e.entrytype+', not a GSE series.');
-  var gpl=((e.gpl||'')+'').toUpperCase().trim();
+  // Try multiple field names — NCBI is inconsistent across dataset types
+  var rawGpl = e.gpl || e.GPL || e.platform || e.platforms || '';
+  var gpl = normalizeGpl(rawGpl);
   var suppRaw=e.suppfile||e.Suppfile||e.suppfiles||'';
   var suppFiles=suppRaw?suppRaw.split(/;\s*|\t/).map(function(s){return s.trim();}).filter(Boolean):[];
   return {
@@ -962,7 +977,7 @@ function onStudyFetched(meta) {
     '<p>I found this study in GEO:</p>',
     '<table class="meta-tbl">',
     '<tr><td>Title</td><td><strong>'+esc(meta.title)+'</strong></td></tr>',
-    '<tr><td>Array platform</td><td>'+esc(meta.gplName||meta.gpl||'—')+'</td></tr>',
+    '<tr><td>Array platform</td><td>'+esc(meta.gplName||(meta.gpl?meta.gpl+' (unrecognized)':'—'))+'</td></tr>',
     '<tr><td>Samples</td><td>'+esc(meta.nSamples>0?meta.nSamples:'—')+'</td></tr>',
     meta.organism?'<tr><td>Organism</td><td>'+esc(meta.organism)+'</td></tr>':'',
     '</table>',
