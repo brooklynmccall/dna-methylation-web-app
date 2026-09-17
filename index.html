@@ -460,9 +460,23 @@ function normalizeGpl(raw) {
 }
 
 function parseSummary(data, gse) {
+  // Check for API-level error field
+  if (data.error) throw new Error('NCBI error: ' + data.error);
+
   var res=data.result||{}, keys=Object.keys(res).filter(function(k){return k!=='uids';});
   if(!keys.length) throw new Error(gse+' not found in GEO.');
   var e=res[keys[0]];
+
+  // Debug: log what NCBI actually returned so issues are visible in the console
+  console.log('[MS] NCBI entry — accession:', e.accession, '| title:', (e.title||'').slice(0,60),
+              '| entrytype:', e.entrytype, '| gpl:', e.gpl,
+              '| n_samples:', e.n_samples, '| samples:', Array.isArray(e.samples)?e.samples.length:'—');
+
+  // If the entry has no title and no accession it's an empty shell (rate-limit / bad UID)
+  if (!e.title && !e.accession) {
+    throw new Error('NCBI returned an empty entry for ' + gse + '. This is usually a rate-limit — wait a moment and try again.');
+  }
+
   if(e.entrytype&&e.entrytype!=='GSE') throw new Error('UID resolved to '+e.entrytype+', not a GSE series.');
 
   // GPL — NCBI may return just a number ("13534") or with prefix ("GPL13534")
@@ -485,27 +499,39 @@ function parseSummary(data, gse) {
   var pubmed = Array.isArray(e.pubmedids) ? e.pubmedids.filter(Boolean) : [];
 
   return {
-    gpl:gpl, gplName:GPL_NAME[gpl]||(gpl?gpl:'Unknown platform'),
+    gpl:gpl, gplName:GPL_NAME[gpl]||(gpl?gpl:(gpl===''?'Unknown platform':gpl)),
     arrType:GPL_TYPE[gpl]||null,
-    title:e.title||gse, summary:e.summary||'',
+    title:e.title||e.accession||gse, summary:e.summary||'',
     organism:e.taxon||'',
     nSamples:nSamples, ncbiSamples:ncbiSamples,
     suppFiles:suppFiles, pubmed:pubmed,
   };
 }
+function delay(ms) { return new Promise(function(r){ setTimeout(r,ms); }); }
 function fetchNCBIMeta(gse) {
   var uid='200'+gse.replace(/^GSE/i,'');
-  return eSummary(uid)
-    .then(function(d){ return parseSummary(d,gse); })
-    .catch(function(firstErr) {
-      console.warn('[MS] direct eSummary failed:',firstErr.message);
-      return eSearch(gse+'[ACCN]').then(function(d){
-        var ids=((d.esearchresult||{}).idlist||[]);
-        if(!ids.length) throw new Error(gse+' not found in GEO. Check the accession number.');
-        var id=ids.find(function(x){return /^200/.test(x);})||ids[0];
-        return eSummary(id);
-      }).then(function(d){ return parseSummary(d,gse); });
+
+  function tryDirect() {
+    return eSummary(uid).then(function(d){ return parseSummary(d,gse); });
+  }
+  function trySearch() {
+    return eSearch(gse+'[ACCN]').then(function(d){
+      var ids=((d.esearchresult||{}).idlist||[]);
+      if(!ids.length) throw new Error(gse+' not found in GEO. Check the accession number.');
+      // Prefer GSE UIDs (200xxxxx); fall back to first result
+      var id=ids.find(function(x){return /^200/.test(x);})||ids[0];
+      console.log('[MS] eSearch chose UID:', id);
+      return eSummary(id);
+    }).then(function(d){ return parseSummary(d,gse); });
+  }
+
+  return tryDirect().catch(function(firstErr) {
+    console.warn('[MS] tryDirect failed:', firstErr.message, '— trying eSearch after 600 ms');
+    return delay(600).then(trySearch).catch(function(searchErr) {
+      console.warn('[MS] trySearch failed:', searchErr.message, '— one more direct retry after 1.2 s');
+      return delay(1200).then(tryDirect).catch(function() { throw firstErr; });
     });
+  });
 }
 
 // ── GEO FTP ──
