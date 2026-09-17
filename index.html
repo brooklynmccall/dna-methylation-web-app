@@ -739,8 +739,8 @@ function buildIdatScript(gse,arr,n) {
   p('            "submission_date","last_update_date","pubmed_id","summary","overall_design"),');
   p('  Value = c(');
   p('    annotation(gse_obj), ei@title,');
-  p('    paste(organism(gse_obj), collapse="; "),');
-  p('    paste(unique(pData(gse_obj)$platform_id), collapse="; "),');
+  p('    paste(unique(pData(gse_obj)$organism_ch1), collapse="; "),');
+  p('    paste(unique(pData(gse_obj)$platform_id),  collapse="; "),');
   p('    as.character(ei@dateSubmitted),');
   p('    as.character(ei@other$last_update_date),');
   p('    as.character(pubMedIds(gse_obj)),');
@@ -934,8 +934,8 @@ function buildSigScript(gse,arr,fmt,sigFile,n) {
   p('            "submission_date","last_update_date","pubmed_id","summary","overall_design"),');
   p('  Value = c(');
   p('    annotation(gse_obj), ei@title,');
-  p('    paste(organism(gse_obj), collapse="; "),');
-  p('    paste(unique(pData(gse_obj)$platform_id), collapse="; "),');
+  p('    paste(unique(pData(gse_obj)$organism_ch1), collapse="; "),');
+  p('    paste(unique(pData(gse_obj)$platform_id),  collapse="; "),');
   p('    as.character(ei@dateSubmitted),');
   p('    as.character(ei@other$last_update_date),');
   p('    as.character(pubMedIds(gse_obj)),');
