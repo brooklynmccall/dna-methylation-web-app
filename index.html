@@ -643,6 +643,15 @@ function runTimeEst(n,type,idat) {
 // ── R Script — IDAT path ──
 function buildIdatScript(gse,arr,n) {
   var normFn=arr==='27K'?'preprocessQuantile':'preprocessFunnorm';
+  // Each array type needs its own Bioconductor manifest + annotation package
+  var manifestPkg = arr==='27K'  ? 'IlluminaHumanMethylation27kmanifest'  :
+                    arr==='450K' ? 'IlluminaHumanMethylation450kmanifest' :
+                    arr==='EPICv2'?'IlluminaHumanMethylationEPICv2manifest':
+                                   'IlluminaHumanMethylationEPICmanifest';
+  var annotPkg    = arr==='27K'  ? 'IlluminaHumanMethylation27kanno.ilmn12.hg19'    :
+                    arr==='450K' ? 'IlluminaHumanMethylation450kanno.ilmn12.hg19'   :
+                    arr==='EPICv2'?'IlluminaHumanMethylationEPICv2anno.20a1.hg38'   :
+                                   'IlluminaHumanMethylationEPICanno.ilm10b4.hg19';
   var L=[],p=function(s){L.push(s);};
   p('# ═══════════════════════════════════════════════════════════════════');
   p('# MethylScript — DNA Methylation Normalization Pipeline');
@@ -657,7 +666,13 @@ function buildIdatScript(gse,arr,n) {
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
   p('if (!requireNamespace("BiocManager", quietly = TRUE))');
   p('  install.packages("BiocManager")');
-  p('BiocManager::install(c("minfi", "GEOquery"), ask = FALSE, update = FALSE)');
+  p('BiocManager::install(');
+  p('  c("minfi", "GEOquery",');
+  p('    "'+manifestPkg+'",   # array manifest (required by minfi)');
+  p('    "'+annotPkg+'"  # probe annotations');
+  p('  ),');
+  p('  ask = FALSE, update = FALSE');
+  p(')');
   p('if (!requireNamespace("R.utils", quietly = TRUE)) install.packages("R.utils")');
   p('');p('library(minfi)');p('library(GEOquery)');p('library(R.utils)');
   p('');
