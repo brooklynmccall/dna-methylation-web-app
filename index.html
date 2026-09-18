@@ -1178,22 +1178,28 @@ function onFilesReady(matrixLines, sigLines) {
   }
 
   if(matrixLines&&matrixLines.length>0){
-    // Collect all !Sample_ rows and filter to those that vary across samples
+    // Keep characteristics rows always; keep other !Sample_ rows only if they vary;
+    // skip supplementary_file rows entirely.
     var sampleRows=matrixLines.filter(function(l){return l&&l.startsWith('!Sample_');});
-    var varyingRows=sampleRows.filter(function(line){
+    var displayRows=sampleRows.filter(function(line){
+      if(/^!Sample_supplementary_file/i.test(line)) return false;
+      if(/^!Sample_characteristics/i.test(line)) return true; // always include
       var ti=line.indexOf('\t');
       if(ti<0) return false;
       var vals=line.slice(ti+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
       var first=vals[0];
       return vals.some(function(v){return v!==first;});
     });
-    if(varyingRows.length>0){
-      // Build highlighted HTML: characteristics rows get special styling
-      var preHtml=varyingRows.map(function(line){
+    if(displayRows.length>0){
+      // Build highlighted HTML; insert one blank line before the first characteristics block
+      var seenChar=false;
+      var preHtml=displayRows.map(function(line){
         var isChar=/^!Sample_characteristics/i.test(line);
+        var prefix='';
+        if(isChar&&!seenChar){ seenChar=true; prefix='\n'; }
         var escaped=esc(line);
-        if(isChar) return '<span style="background:var(--accent-subtle);color:var(--accent-text);display:block;border-radius:2px;padding:0 2px;">'+escaped+'</span>';
-        return escaped;
+        if(isChar) return prefix+'<span style="background:var(--accent-subtle);color:var(--accent-text);display:inline-block;min-width:100%;padding:0 2px;margin:0;">'+escaped+'</span>';
+        return prefix+escaped;
       }).join('\n');
       parts.push('<div class="preview"><pre>'+preHtml+'</pre></div>');
     }
