@@ -1191,13 +1191,31 @@ function onFilesReady(matrixLines, sigLines) {
       return vals.some(function(v){return v!==first;});
     });
     if(displayRows.length>0){
-      // Build highlighted HTML; insert one blank line before the first characteristics block
+      // Parse each row into cells, strip quotes
+      var parsed=displayRows.map(function(line){
+        return line.split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
+      });
+      // Compute max character width per column across all rows
+      var colW=[];
+      parsed.forEach(function(cols){
+        cols.forEach(function(cell,ci){
+          if(!colW[ci]||cell.length>colW[ci]) colW[ci]=cell.length;
+        });
+      });
+      // Pad string to width with trailing spaces
+      function padR(s,w){var r=s||'';while(r.length<w)r+=' ';return r;}
+      // Build highlighted HTML; insert one blank line before first characteristics block
       var seenChar=false;
-      var preHtml=displayRows.map(function(line){
+      var preHtml=displayRows.map(function(line,ri){
         var isChar=/^!Sample_characteristics/i.test(line);
         var prefix='';
-        if(isChar&&!seenChar){ seenChar=true; prefix='\n'; }
-        var escaped=esc(line);
+        if(isChar&&!seenChar){seenChar=true;prefix='\n';}
+        // Rebuild line with aligned columns (2-space separator; last col unpadded)
+        var cols=parsed[ri];
+        var aligned=cols.map(function(cell,ci){
+          return ci<cols.length-1 ? padR(cell,colW[ci]) : cell;
+        }).join('  ');
+        var escaped=esc(aligned);
         if(isChar) return prefix+'<span style="background:var(--accent-subtle);color:var(--accent-text);display:inline-block;min-width:100%;padding:0 2px;margin:0;">'+escaped+'</span>';
         return prefix+escaped;
       }).join('\n');
