@@ -1100,17 +1100,6 @@ function onStudyFetched(meta) {
   if(meta.pubmed.length) parts.push('<tr><td>PubMed</td><td>'+meta.pubmed.map(function(id){return '<a href="https://pubmed.ncbi.nlm.nih.gov/'+esc(id)+'/" target="_blank">'+esc(id)+'</a>';}).join(', ')+'</td></tr>');
   parts.push('</table>');
 
-  // Show sample chips if we have them from esummary
-  if(meta.ncbiSamples.length>0){
-    parts.push('<p style="margin-top:10px;">Samples:</p>');
-    var show = Math.min(meta.ncbiSamples.length, 24);
-    var chips = '<div class="chips">';
-    for(var i=0;i<show;i++) chips += '<span class="chip">'+esc(meta.ncbiSamples[i].gsm)+'</span>';
-    if(meta.ncbiSamples.length>24) chips += '<span class="chip">+'+(meta.ncbiSamples.length-24)+' more</span>';
-    chips += '</div>';
-    parts.push(chips);
-  }
-
   if(meta.summary){
     var brief = meta.summary.length>300 ? meta.summary.slice(0,300)+'…' : meta.summary;
     parts.push('<p style="margin-top:10px;font-size:13px;color:var(--text-2);">'+esc(brief)+'</p>');
@@ -1189,8 +1178,25 @@ function onFilesReady(matrixLines, sigLines) {
   }
 
   if(matrixLines&&matrixLines.length>0){
-    var sl=matrixLines.filter(function(l){return l&&l.startsWith('!Series');}).slice(0,7);
-    if(sl.length) parts.push('<div class="preview"><pre>'+esc(sl.join('\n'))+'</pre></div>');
+    // Collect all !Sample_ rows and filter to those that vary across samples
+    var sampleRows=matrixLines.filter(function(l){return l&&l.startsWith('!Sample_');});
+    var varyingRows=sampleRows.filter(function(line){
+      var ti=line.indexOf('\t');
+      if(ti<0) return false;
+      var vals=line.slice(ti+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
+      var first=vals[0];
+      return vals.some(function(v){return v!==first;});
+    });
+    if(varyingRows.length>0){
+      // Build highlighted HTML: characteristics rows get special styling
+      var preHtml=varyingRows.map(function(line){
+        var isChar=/^!Sample_characteristics/i.test(line);
+        var escaped=esc(line);
+        if(isChar) return '<span style="background:var(--accent-subtle);color:var(--accent-text);display:block;border-radius:2px;padding:0 2px;">'+escaped+'</span>';
+        return escaped;
+      }).join('\n');
+      parts.push('<div class="preview"><pre>'+preHtml+'</pre></div>');
+    }
   }
 
   parts.push('<p style="margin-top:12px;">');
