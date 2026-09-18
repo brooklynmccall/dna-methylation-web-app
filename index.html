@@ -803,10 +803,11 @@ function buildIdatScript(gse,arr,n) {
   p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
   p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
-  p('# Sort probes alphabetically and prepend ID_REF header column');
-  p('beta_out <- data.frame(ID_REF = rownames(beta_mat),');
-  p('                       beta_mat[order(rownames(beta_mat)), , drop=FALSE],');
-  p('                       check.names=FALSE, stringsAsFactors=FALSE)');
+  p('# Sort probes alphabetically, then prepend ID_REF header column');
+  p('beta_sorted <- beta_mat[order(rownames(beta_mat)), , drop=FALSE]');
+  p('beta_out    <- data.frame(ID_REF = rownames(beta_sorted),');
+  p('                          beta_sorted,');
+  p('                          check.names=FALSE, stringsAsFactors=FALSE)');
   p('write.table(beta_out, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_methylation_values.tsv")))');
   p('');
@@ -814,7 +815,7 @@ function buildIdatScript(gse,arr,n) {
   p('message("  ",gse_id,"_series_metadata.tsv")');
   p('message("  ",gse_id,"_sample_metadata.tsv")');
   p('message("  ",gse_id,"_methylation_values.tsv  (",');
-  p('        nrow(beta_out)-1," probes x ",(ncol(beta_out)-1)," samples)")');
+  p('        nrow(beta_out)," probes x ",(ncol(beta_out)-1)," samples)")');
   return L.join('\n');
 }
 
@@ -1016,10 +1017,11 @@ function buildSigScript(gse,arr,fmt,sigFile,n) {
   p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
   p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
-  p('# Sort probes alphabetically and prepend ID_REF header column');
-  p('beta_out <- data.frame(ID_REF = rownames(beta_mat),');
-  p('                       beta_mat[order(rownames(beta_mat)), , drop=FALSE],');
-  p('                       check.names=FALSE, stringsAsFactors=FALSE)');
+  p('# Sort probes alphabetically, then prepend ID_REF header column');
+  p('beta_sorted <- beta_mat[order(rownames(beta_mat)), , drop=FALSE]');
+  p('beta_out    <- data.frame(ID_REF = rownames(beta_sorted),');
+  p('                          beta_sorted,');
+  p('                          check.names=FALSE, stringsAsFactors=FALSE)');
   p('write.table(beta_out, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_methylation_values.tsv")))');
   p('');
