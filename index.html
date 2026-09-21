@@ -543,6 +543,27 @@ function geoBase(gse) {
 function matrixUrl(gse)         { return geoBase(gse)+'/matrix/'+gse+'_series_matrix.txt.gz'; }
 function suppUrl(gse, filename) { return geoBase(gse)+'/suppl/'+encodeURIComponent(filename); }
 
+// Fetch the FTP /suppl/ directory listing and return an array of filenames
+async function fetchSuppDir(gse) {
+  var url = geoBase(gse)+'/suppl/';
+  try {
+    var resp = await fetch(url);
+    if (!resp.ok) return [];
+    var html = await resp.text();
+    // Apache/nginx directory index: extract href values
+    var re = /href="([^"?#/][^"?#]*)"/gi, m, names=[];
+    while ((m = re.exec(html)) !== null) {
+      var name = m[1];
+      if (/\.(txt|csv|tsv|gz|zip)(\.gz)?$/i.test(name)) names.push(name);
+    }
+    console.log('[MS] FTP suppl dir found:', names);
+    return names;
+  } catch(e) {
+    console.warn('[MS] fetchSuppDir failed:', e.message);
+    return [];
+  }
+}
+
 async function fetchLines(url, maxLines) {
   maxLines=maxLines||100;
   var isGz=/\.gz$/i.test(url), resp=null;
@@ -1131,9 +1152,15 @@ function onStudyYes() {
   var suppFiles=(S.ncbiMeta&&S.ncbiMeta.suppFiles)||[];
 
   fetchLines(matrixUrl(S.gseId), 220)
-    .then(function(lines){
+    .then(async function(lines){
       S.matMeta=parseMatrix(lines);
+      // 1st pass: NCBI suppFiles list
       var sigFilename=findSigFile(suppFiles);
+      // 2nd pass: FTP directory listing (more complete)
+      if(!sigFilename){
+        var dirFiles=await fetchSuppDir(S.gseId);
+        if(dirFiles.length) sigFilename=findSigFile(dirFiles);
+      }
       S.signalFile=sigFilename;
       if(sigFilename){
         return fetchLines(suppUrl(S.gseId,sigFilename),12)
@@ -1143,9 +1170,14 @@ function onStudyYes() {
         ty.remove(); onFilesReady(lines,null);
       }
     })
-    .catch(function(err){
+    .catch(async function(err){
       console.warn('[MS] matrix fetch failed:',err.message);
-      S.signalFile=findSigFile(suppFiles);
+      var sigFilename=findSigFile(suppFiles);
+      if(!sigFilename){
+        var dirFiles=await fetchSuppDir(S.gseId);
+        if(dirFiles.length) sigFilename=findSigFile(dirFiles);
+      }
+      S.signalFile=sigFilename;
       ty.remove(); onFilesReady(null,null);
     });
 }
@@ -1262,10 +1294,46 @@ function onFilesReady(matrixLines, sigLines) {
 }
 
 function onFileChoice(choice) {
+  if(choice==='signal' && !S.signalFile){
+    // No file auto-detected — ask the user for the filename before proceeding
+    showFilenamePrompt();
+    return;
+  }
   S.fileChoice=choice; S.phase='DONE';
   addMsg('user','✓ '+(choice==='idat'?'IDAT files':'signal table'));
   var ty=addTyping(); clearPanel();
   setTimeout(function(){ ty.remove(); showScript(); }, 700);
+}
+
+function showFilenamePrompt() {
+  clearPanel();
+  addMsg('system','<p>I couldn\'t automatically find a signal table in the supplementary files. Please enter the exact filename — you can find it on the <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc='+esc(S.gseId)+'" target="_blank">GEO page</a> under "Supplementary file".</p>');
+  // Render an inline filename input in the choice panel
+  var wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;gap:8px;align-items:center;padding:4px 0;';
+  var inp=document.createElement('input');
+  inp.type='text'; inp.placeholder='e.g. '+S.gseId+'_signal.txt.gz';
+  inp.style.cssText='flex:1;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);outline:none;';
+  var btn=document.createElement('button');
+  btn.className='c-btn primary'; btn.textContent='Use this file';
+  function submit(){
+    var name=inp.value.trim();
+    if(!name) return;
+    S.signalFile=name;
+    addMsg('user',esc(name));
+    S.fileChoice='signal'; S.phase='DONE';
+    clearPanel();
+    var ty=addTyping();
+    // Try to fetch a short preview of the provided file
+    fetchLines(suppUrl(S.gseId,name),12)
+      .then(function(sfLines){ var fmtRes=detectSigFmt(sfLines); S.signalFmt=fmtRes.format; ty.remove(); showScript(); })
+      .catch(function(){ ty.remove(); showScript(); });
+  }
+  btn.addEventListener('click',submit);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') submit(); });
+  wrap.appendChild(inp); wrap.appendChild(btn);
+  choicePanel.appendChild(wrap);
+  inp.focus();
 }
 
 function showScript() {
