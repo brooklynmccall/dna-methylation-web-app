@@ -1294,6 +1294,7 @@ function onFilesReady(matrixLines, sigLines) {
 }
 
 function onFileChoice(choice) {
+  console.log('[MS] onFileChoice:', choice, '| S.signalFile:', S.signalFile);
   if(choice==='signal' && !S.signalFile){
     // No file auto-detected — ask the user for the filename before proceeding
     showFilenamePrompt();
@@ -1307,32 +1308,47 @@ function onFileChoice(choice) {
 
 function showFilenamePrompt() {
   clearPanel();
-  addMsg('system','<p>I couldn\'t automatically find a signal table in the supplementary files. Please enter the exact filename — you can find it on the <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc='+esc(S.gseId)+'" target="_blank">GEO page</a> under "Supplementary file".</p>');
-  // Render an inline filename input in the choice panel
+  // Build the message bubble manually so we can embed a live input inside it
+  var row=document.createElement('div');
+  row.className='msg-row system';
+  var bub=document.createElement('div');
+  bub.className='msg-bubble';
+
+  var p=document.createElement('p');
+  p.innerHTML='I couldn\'t automatically find a signal table in the supplementary files. Please enter the exact filename — you can find it on the <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc='+esc(S.gseId)+'" target="_blank">GEO page</a> under "Supplementary file".';
+  bub.appendChild(p);
+
   var wrap=document.createElement('div');
-  wrap.style.cssText='display:flex;gap:8px;align-items:center;padding:4px 0;';
+  wrap.style.cssText='display:flex;gap:8px;align-items:center;margin-top:10px;';
   var inp=document.createElement('input');
-  inp.type='text'; inp.placeholder='e.g. '+S.gseId+'_signal.txt.gz';
-  inp.style.cssText='flex:1;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);outline:none;';
+  inp.type='text';
+  inp.placeholder='e.g. '+S.gseId+'_signal.txt.gz';
+  inp.style.cssText='flex:1;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-alt);color:var(--text);outline:none;min-width:0;';
   var btn=document.createElement('button');
   btn.className='c-btn primary'; btn.textContent='Use this file';
+
   function submit(){
     var name=inp.value.trim();
     if(!name) return;
     S.signalFile=name;
+    // Freeze the prompt row
+    inp.disabled=true; btn.disabled=true;
     addMsg('user',esc(name));
     S.fileChoice='signal'; S.phase='DONE';
     clearPanel();
     var ty=addTyping();
-    // Try to fetch a short preview of the provided file
     fetchLines(suppUrl(S.gseId,name),12)
       .then(function(sfLines){ var fmtRes=detectSigFmt(sfLines); S.signalFmt=fmtRes.format; ty.remove(); showScript(); })
       .catch(function(){ ty.remove(); showScript(); });
   }
   btn.addEventListener('click',submit);
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter') submit(); });
+
   wrap.appendChild(inp); wrap.appendChild(btn);
-  choicePanel.appendChild(wrap);
+  bub.appendChild(wrap);
+  row.appendChild(bub);
+  chatMessages.appendChild(row);
+  scrollBot();
   inp.focus();
 }
 
