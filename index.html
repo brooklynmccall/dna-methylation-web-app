@@ -287,6 +287,25 @@ main { max-width: 680px; margin: 0 auto; }
 .hljs-punctuation { color: #8b949e; }
 .hljs-literal { color: #79c0ff; }
 
+/* ── Option cards (gene-level questions) ── */
+.opt-list { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 8px; }
+.opt-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; cursor: pointer; text-align: left; width: 100%;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color 0.15s, background 0.12s, box-shadow 0.12s;
+}
+.opt-card:hover { border-color: var(--accent); background: var(--accent-subtle); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.opt-card.recommended { border-color: var(--accent); }
+.opt-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.opt-card-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.opt-card-tag {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.04em;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--accent-subtle); color: var(--accent-text);
+}
+.opt-card-desc { font-size: 12px; color: var(--text-2); line-height: 1.55; }
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -377,6 +396,7 @@ var GPL_NAME = {
 var S = {
   phase:'IDLE', gseId:null, ncbiMeta:null, matMeta:null,
   signalFile:null, signalFmt:null, fileChoice:null, rScript:null,
+  regions:null, aggFunc:null,
 };
 
 var chatMessages = document.getElementById('chat-messages');
@@ -434,6 +454,37 @@ function showBtns(defs) {
     row.appendChild(b);
   });
   choicePanel.appendChild(row);
+  scrollBot();
+}
+
+function showOptCards(defs) {
+  clearPanel();
+  var list = document.createElement('div');
+  list.className = 'opt-list';
+  defs.forEach(function(d) {
+    var card = document.createElement('button');
+    card.className = 'opt-card' + (d.recommended ? ' recommended' : '');
+    var hdr = document.createElement('div');
+    hdr.className = 'opt-card-header';
+    var lbl = document.createElement('span');
+    lbl.className = 'opt-card-label';
+    lbl.textContent = d.label;
+    hdr.appendChild(lbl);
+    if (d.tag) {
+      var tag = document.createElement('span');
+      tag.className = 'opt-card-tag';
+      tag.textContent = d.tag;
+      hdr.appendChild(tag);
+    }
+    var desc = document.createElement('div');
+    desc.className = 'opt-card-desc';
+    desc.textContent = d.desc;
+    card.appendChild(hdr);
+    card.appendChild(desc);
+    card.addEventListener('click', d.fn);
+    list.appendChild(card);
+  });
+  choicePanel.appendChild(list);
   scrollBot();
 }
 
@@ -662,7 +713,7 @@ function runTimeEst(n,type,idat) {
 }
 
 // ── R Script — IDAT path ──
-function buildIdatScript(gse,arr,n) {
+function buildIdatScript(gse,arr,n,regions,aggFunc) {
   var normFn=arr==='27K'?'preprocessQuantile':'preprocessFunnorm';
   // Each array type needs its own Bioconductor manifest + annotation package
   var manifestPkg = arr==='27K'  ? 'IlluminaHumanMethylation27kmanifest'  :
@@ -682,6 +733,7 @@ function buildIdatScript(gse,arr,n) {
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
   p('#           '+gse+'_methylation_values.tsv');
+  p('#           '+gse+'_gene_level_betas.tsv');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
@@ -696,6 +748,7 @@ function buildIdatScript(gse,arr,n) {
   p(')');
   p('if (!requireNamespace("R.utils", quietly = TRUE)) install.packages("R.utils")');
   p('');p('library(minfi)');p('library(GEOquery)');p('library(R.utils)');
+  p('library('+annotPkg+')');
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
   p('gse_id          <- "'+gse+'"');
@@ -837,11 +890,101 @@ function buildIdatScript(gse,arr,n) {
   p('message("  ",gse_id,"_sample_metadata.tsv")');
   p('message("  ",gse_id,"_methylation_values.tsv  (",');
   p('        nrow(beta_out)," probes x ",(ncol(beta_out)-1)," samples)")');
+  p('');
+  // ── Gene-level aggregation block ──
+  var regionLabel = regions==='promoter'?'Promoter (TSS200, TSS1500, 1stExon)':
+                    regions==='body'?'Gene body (Body)':
+                    regions==='promoter_body'?'Promoter + Gene body (TSS200, TSS1500, 1stExon, Body)':
+                    'All annotated probes';
+  var aggLabel = aggFunc==='median'?'Median':aggFunc==='pc1'?'First principal component (PC1)':'Mean';
+  p('# ── 11. Gene-level aggregation ─────────────────────────────────────────');
+  p('# Region:      '+regionLabel);
+  p('# Aggregation: '+aggLabel);
+  p('message("Computing gene-level beta values...")');
+  p('');
+  p('# Load probe annotations from the array manifest');
+  p('anno <- as.data.frame(getAnnotation(grSet))');
+  p('');
+  // Region filter
+  if(regions==='promoter'){
+    p('# Filter: promoter-proximal probes (TSS200, TSS1500, 1stExon)');
+    p('keep_region <- grepl("TSS200|TSS1500|1stExon", anno$UCSC_RefGene_Group)');
+  } else if(regions==='body'){
+    p('# Filter: gene body probes only (Body)');
+    p('keep_region <- grepl("\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
+  } else if(regions==='promoter_body'){
+    p('# Filter: promoter + gene body probes (TSS200, TSS1500, 1stExon, Body)');
+    p('keep_region <- grepl("TSS200|TSS1500|1stExon|\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
+  } else {
+    p('# Filter: all probes with any gene annotation');
+    p('keep_region <- !is.na(anno$UCSC_RefGene_Name) & anno$UCSC_RefGene_Name != ""');
+  }
+  p('');
+  p('region_probes <- rownames(anno)[keep_region]');
+  p('beta_region   <- beta_mat[rownames(beta_mat) %in% region_probes, , drop = FALSE]');
+  p('anno_sub      <- anno[rownames(anno) %in% rownames(beta_region), , drop = FALSE]');
+  p('');
+  p('message("  ", nrow(beta_region), " probes in selected region(s)")');
+  p('');
+  p('# Expand multi-gene probe mappings (UCSC_RefGene_Name is ";"-delimited)');
+  p('probe_gene_pairs <- do.call(rbind, lapply(seq_len(nrow(anno_sub)), function(i) {');
+  p('  genes <- unique(trimws(strsplit(anno_sub$UCSC_RefGene_Name[i], ";")[[1]]))');
+  p('  genes <- genes[nchar(genes) > 0]');
+  p('  if (length(genes) == 0) return(NULL)');
+  p('  data.frame(probe = rownames(anno_sub)[i], gene = genes, stringsAsFactors = FALSE)');
+  p('}))');
+  p('if (is.null(probe_gene_pairs) || nrow(probe_gene_pairs) == 0)');
+  p('  stop("No probe-to-gene mappings found for the selected region. Check the annotation package.")');
+  p('');
+  p('# Aggregate probes to gene-level scores');
+  p('all_genes <- sort(unique(probe_gene_pairs$gene))');
+  p('message("  Aggregating ", length(all_genes), " genes using '+aggLabel+'...")');
+  p('');
+  if(aggFunc==='median'){
+    p('gene_betas <- do.call(rbind, lapply(all_genes, function(g) {');
+    p('  probes <- probe_gene_pairs$probe[probe_gene_pairs$gene == g]');
+    p('  probes <- probes[probes %in% rownames(beta_region)]');
+    p('  mat    <- beta_region[probes, , drop = FALSE]');
+    p('  apply(mat, 2, median, na.rm = TRUE)');
+    p('}))');
+    p('rownames(gene_betas) <- all_genes');
+  } else if(aggFunc==='pc1'){
+    p('gene_betas <- do.call(rbind, lapply(all_genes, function(g) {');
+    p('  probes <- probe_gene_pairs$probe[probe_gene_pairs$gene == g]');
+    p('  probes <- probes[probes %in% rownames(beta_region)]');
+    p('  mat    <- beta_region[probes, , drop = FALSE]');
+    p('  if (nrow(mat) < 2) return(colMeans(mat, na.rm = TRUE))  # fallback: mean for single-probe genes');
+    p('  mat_complete <- mat[complete.cases(mat), , drop = FALSE]');
+    p('  if (nrow(mat_complete) < 2) return(colMeans(mat, na.rm = TRUE))');
+    p('  pca <- prcomp(t(mat_complete), scale. = FALSE, center = TRUE)');
+    p('  pc1 <- pca$x[, 1]');
+    p('  # Orient PC1 so higher values correspond to higher mean methylation');
+    p('  if (cor(pc1, colMeans(mat_complete, na.rm = TRUE)) < 0) pc1 <- -pc1');
+    p('  pc1');
+    p('}))');
+    p('rownames(gene_betas) <- all_genes');
+  } else {
+    p('gene_betas <- do.call(rbind, lapply(all_genes, function(g) {');
+    p('  probes <- probe_gene_pairs$probe[probe_gene_pairs$gene == g]');
+    p('  probes <- probes[probes %in% rownames(beta_region)]');
+    p('  mat    <- beta_region[probes, , drop = FALSE]');
+    p('  colMeans(mat, na.rm = TRUE)');
+    p('}))');
+    p('rownames(gene_betas) <- all_genes');
+  }
+  p('');
+  p('# Write gene-level output');
+  p('gene_out <- data.frame(Gene = rownames(gene_betas), gene_betas,');
+  p('                       check.names = FALSE, stringsAsFactors = FALSE)');
+  p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
+  p('            file = file.path(output_dir, paste0(gse_id, "_gene_level_betas.tsv")))');
+  p('message("  ", gse_id, "_gene_level_betas.tsv  (",');
+  p('        nrow(gene_betas), " genes x ", ncol(gene_betas), " samples)")');
   return L.join('\n');
 }
 
 // ── R Script — Signal table path ──
-function buildSigScript(gse,arr,fmt,sigFile,n) {
+function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   var L=[],p=function(s){L.push(s);};
   p('# ═══════════════════════════════════════════════════════════════════');
   p('# MethylScript — DNA Methylation Normalization Pipeline');
@@ -850,17 +993,28 @@ function buildSigScript(gse,arr,fmt,sigFile,n) {
   p('#           β = Methylated / (Methylated + Unmethylated + 100)');
   p('# Format:   '+(fmt||'auto-detected'));
   p('# Samples:  '+(n||'unknown'));
+  var annotPkgSig = arr==='27K'  ? 'IlluminaHumanMethylation27kanno.ilmn12.hg19'    :
+                    arr==='450K' ? 'IlluminaHumanMethylation450kanno.ilmn12.hg19'   :
+                    arr==='EPICv2'?'IlluminaHumanMethylationEPICv2anno.20a1.hg38'   :
+                                   'IlluminaHumanMethylationEPICanno.ilm10b4.hg19';
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
   p('#           '+gse+'_methylation_values.tsv');
+  p('#           '+gse+'_gene_level_betas.tsv');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
   p('if (!requireNamespace("BiocManager", quietly = TRUE))');
   p('  install.packages("BiocManager")');
-  p('BiocManager::install("GEOquery", ask = FALSE, update = FALSE)');
+  p('BiocManager::install(');
+  p('  c("minfi", "GEOquery",');
+  p('    "'+annotPkgSig+'"  # probe annotations for gene-level aggregation');
+  p('  ),');
+  p('  ask = FALSE, update = FALSE');
+  p(')');
   p('if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")');
-  p('');p('library(GEOquery)');p('library(data.table)');
+  p('');p('library(minfi)');p('library(GEOquery)');p('library(data.table)');
+  p('library('+annotPkgSig+')');
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
   p('gse_id          <- "'+gse+'"');
@@ -1051,6 +1205,95 @@ function buildSigScript(gse,arr,fmt,sigFile,n) {
   p('message("  ",gse_id,"_sample_metadata.tsv")');
   p('message("  ",gse_id,"_methylation_values.tsv  (",');
   p('        nrow(beta_out)-1," probes x ",(ncol(beta_out)-1)," samples)")');
+  p('');
+  // ── Gene-level aggregation block (signal path) ──
+  var regionLabelSig = regions==='promoter'?'Promoter (TSS200, TSS1500, 1stExon)':
+                       regions==='body'?'Gene body (Body)':
+                       regions==='promoter_body'?'Promoter + Gene body (TSS200, TSS1500, 1stExon, Body)':
+                       'All annotated probes';
+  var aggLabelSig = aggFunc==='median'?'Median':aggFunc==='pc1'?'First principal component (PC1)':'Mean';
+  p('# ── 9. Gene-level aggregation ─────────────────────────────────────────');
+  p('# Region:      '+regionLabelSig);
+  p('# Aggregation: '+aggLabelSig);
+  p('message("Computing gene-level beta values...")');
+  p('');
+  p('# Load probe annotations');
+  p('anno <- as.data.frame(getAnnotation("'+annotPkgSig+'"))');
+  p('');
+  // Region filter
+  if(regions==='promoter'){
+    p('# Filter: promoter-proximal probes (TSS200, TSS1500, 1stExon)');
+    p('keep_region <- grepl("TSS200|TSS1500|1stExon", anno$UCSC_RefGene_Group)');
+  } else if(regions==='body'){
+    p('# Filter: gene body probes only (Body)');
+    p('keep_region <- grepl("\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
+  } else if(regions==='promoter_body'){
+    p('# Filter: promoter + gene body probes');
+    p('keep_region <- grepl("TSS200|TSS1500|1stExon|\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
+  } else {
+    p('# Filter: all probes with any gene annotation');
+    p('keep_region <- !is.na(anno$UCSC_RefGene_Name) & anno$UCSC_RefGene_Name != ""');
+  }
+  p('');
+  p('region_probes <- rownames(anno)[keep_region]');
+  p('beta_region   <- beta_mat[rownames(beta_mat) %in% region_probes, , drop = FALSE]');
+  p('anno_sub      <- anno[rownames(anno) %in% rownames(beta_region), , drop = FALSE]');
+  p('');
+  p('message("  ", nrow(beta_region), " probes in selected region(s)")');
+  p('');
+  p('# Expand multi-gene probe mappings (UCSC_RefGene_Name is ";"-delimited)');
+  p('probe_gene_pairs <- do.call(rbind, lapply(seq_len(nrow(anno_sub)), function(i) {');
+  p('  genes <- unique(trimws(strsplit(anno_sub$UCSC_RefGene_Name[i], ";")[[1]]))');
+  p('  genes <- genes[nchar(genes) > 0]');
+  p('  if (length(genes) == 0) return(NULL)');
+  p('  data.frame(probe = rownames(anno_sub)[i], gene = genes, stringsAsFactors = FALSE)');
+  p('}))');
+  p('if (is.null(probe_gene_pairs) || nrow(probe_gene_pairs) == 0)');
+  p('  stop("No probe-to-gene mappings found for the selected region. Check the annotation package.")');
+  p('');
+  p('# Aggregate probes to gene-level scores');
+  p('all_genes <- sort(unique(probe_gene_pairs$gene))');
+  p('message("  Aggregating ", length(all_genes), " genes using '+aggLabelSig+'...")');
+  p('');
+  if(aggFunc==='median'){
+    p('gene_betas <- do.call(rbind, lapply(all_genes, function(g) {');
+    p('  probes <- probe_gene_pairs$probe[probe_gene_pairs$gene == g]');
+    p('  probes <- probes[probes %in% rownames(beta_region)]');
+    p('  mat    <- beta_region[probes, , drop = FALSE]');
+    p('  apply(mat, 2, median, na.rm = TRUE)');
+    p('}))');
+    p('rownames(gene_betas) <- all_genes');
+  } else if(aggFunc==='pc1'){
+    p('gene_betas <- do.call(rbind, lapply(all_genes, function(g) {');
+    p('  probes <- probe_gene_pairs$probe[probe_gene_pairs$gene == g]');
+    p('  probes <- probes[probes %in% rownames(beta_region)]');
+    p('  mat    <- beta_region[probes, , drop = FALSE]');
+    p('  if (nrow(mat) < 2) return(colMeans(mat, na.rm = TRUE))');
+    p('  mat_complete <- mat[complete.cases(mat), , drop = FALSE]');
+    p('  if (nrow(mat_complete) < 2) return(colMeans(mat, na.rm = TRUE))');
+    p('  pca <- prcomp(t(mat_complete), scale. = FALSE, center = TRUE)');
+    p('  pc1 <- pca$x[, 1]');
+    p('  if (cor(pc1, colMeans(mat_complete, na.rm = TRUE)) < 0) pc1 <- -pc1');
+    p('  pc1');
+    p('}))');
+    p('rownames(gene_betas) <- all_genes');
+  } else {
+    p('gene_betas <- do.call(rbind, lapply(all_genes, function(g) {');
+    p('  probes <- probe_gene_pairs$probe[probe_gene_pairs$gene == g]');
+    p('  probes <- probes[probes %in% rownames(beta_region)]');
+    p('  mat    <- beta_region[probes, , drop = FALSE]');
+    p('  colMeans(mat, na.rm = TRUE)');
+    p('}))');
+    p('rownames(gene_betas) <- all_genes');
+  }
+  p('');
+  p('# Write gene-level output');
+  p('gene_out <- data.frame(Gene = rownames(gene_betas), gene_betas,');
+  p('                       check.names = FALSE, stringsAsFactors = FALSE)');
+  p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
+  p('            file = file.path(output_dir, paste0(gse_id, "_gene_level_betas.tsv")))');
+  p('message("  ", gse_id, "_gene_level_betas.tsv  (",');
+  p('        nrow(gene_betas), " genes x ", ncol(gene_betas), " samples)")');
   return L.join('\n');
 }
 
@@ -1068,7 +1311,8 @@ function dlScript(content, name) {
 function doStartOver() {
   addMsg('user','Start over');
   S={phase:'IDLE',gseId:null,ncbiMeta:null,matMeta:null,
-     signalFile:null,signalFmt:null,fileChoice:null,rScript:null};
+     signalFile:null,signalFmt:null,fileChoice:null,rScript:null,
+     regions:null,aggFunc:null};
   // Hide chat, unlock input
   chatStage.classList.remove('visible');
   setTimeout(function(){
@@ -1300,10 +1544,10 @@ function onFileChoice(choice) {
     showFilenamePrompt();
     return;
   }
-  S.fileChoice=choice; S.phase='DONE';
+  S.fileChoice=choice;
   addMsg('user','✓ '+(choice==='idat'?'IDAT files':'signal table'));
-  var ty=addTyping(); clearPanel();
-  setTimeout(function(){ ty.remove(); showScript(); }, 700);
+  clearPanel();
+  setTimeout(function(){ onAskRegions(); }, 400);
 }
 
 function showFilenamePrompt() {
@@ -1338,8 +1582,8 @@ function showFilenamePrompt() {
     clearPanel();
     var ty=addTyping();
     fetchLines(suppUrl(S.gseId,name),12)
-      .then(function(sfLines){ var fmtRes=detectSigFmt(sfLines); S.signalFmt=fmtRes.format; ty.remove(); showScript(); })
-      .catch(function(){ ty.remove(); showScript(); });
+      .then(function(sfLines){ var fmtRes=detectSigFmt(sfLines); S.signalFmt=fmtRes.format; ty.remove(); onAskRegions(); })
+      .catch(function(){ ty.remove(); onAskRegions(); });
   }
   btn.addEventListener('click',submit);
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter') submit(); });
@@ -1352,6 +1596,84 @@ function showFilenamePrompt() {
   inp.focus();
 }
 
+function onAskRegions() {
+  S.phase = 'ASK_REGIONS';
+  addMsg('system',
+    '<p>Which <strong>genomic regions</strong> should be included when computing gene-level methylation? ' +
+    'Only probes mapped to the selected regions will contribute to each gene\'s summary score.</p>');
+  showOptCards([
+    {
+      label: 'All annotated probes',
+      tag: 'Recommended',
+      recommended: true,
+      desc: 'Include every probe assigned to any gene region (TSS200, TSS1500, 1stExon, Body, 5\'UTR, 3\'UTR). Best for exploratory analyses where broad genome-wide coverage is desired.',
+      fn: function() { onRegionChoice('all'); }
+    },
+    {
+      label: 'Promoter regions (TSS200, TSS1500, 1stExon)',
+      desc: 'Restrict to probes near the transcription start site and first exon. Promoter methylation is the most characterised mechanism of gene silencing and is the standard choice for differential methylation studies.',
+      fn: function() { onRegionChoice('promoter'); }
+    },
+    {
+      label: 'Gene body only (Body)',
+      desc: 'Restrict to probes within the transcribed gene body. Gene body methylation is positively correlated with expression and is increasingly important in cancer, development, and alternative splicing research.',
+      fn: function() { onRegionChoice('body'); }
+    },
+    {
+      label: 'Promoter + Gene body (TSS200, TSS1500, 1stExon, Body)',
+      desc: 'Combine promoter-proximal and gene body probes. A comprehensive per-gene summary useful when you want to capture both regulatory (silencing) and coding-region (activation) methylation in a single value.',
+      fn: function() { onRegionChoice('promoter_body'); }
+    },
+  ]);
+}
+
+function onRegionChoice(region) {
+  S.regions = region;
+  var labels = {
+    all:           'All annotated probes',
+    promoter:      'Promoter regions (TSS200, TSS1500, 1stExon)',
+    body:          'Gene body only (Body)',
+    promoter_body: 'Promoter + Gene body',
+  };
+  addMsg('user', labels[region] || region);
+  onAskAggFunc();
+}
+
+function onAskAggFunc() {
+  S.phase = 'ASK_AGGFUNC';
+  addMsg('system',
+    '<p>How should probe beta values be <strong>aggregated</strong> into a single gene-level score? ' +
+    'Multiple probes often map to the same gene — this function determines how they are combined.</p>');
+  showOptCards([
+    {
+      label: 'Mean',
+      tag: 'Recommended',
+      recommended: true,
+      desc: 'Average all probe values for the gene. Simple, widely used, and easy to interpret. The standard choice for most studies.',
+      fn: function() { onAggFuncChoice('mean'); }
+    },
+    {
+      label: 'Median',
+      desc: 'Use the middle value across probes. More robust than mean when a few probes have outlier beta values (e.g. near-0 or near-1 failures that survived quality filtering).',
+      fn: function() { onAggFuncChoice('median'); }
+    },
+    {
+      label: 'First principal component (PC1)',
+      desc: 'Extract the first PC across probes for each gene. Captures the dominant co-methylation pattern and maximises variance explained. Preferred for genes with many probes showing correlated patterns — but requires ≥2 probes per gene and is slower to compute.',
+      fn: function() { onAggFuncChoice('pc1'); }
+    },
+  ]);
+}
+
+function onAggFuncChoice(func) {
+  S.aggFunc = func;
+  S.phase = 'DONE';
+  var labels = { mean: 'Mean', median: 'Median', pc1: 'First principal component (PC1)' };
+  addMsg('user', labels[func] || func);
+  var ty = addTyping(); clearPanel();
+  setTimeout(function() { ty.remove(); showScript(); }, 700);
+}
+
 function showScript() {
   var gse=S.gseId, ncbi=S.ncbiMeta||{}, mat=S.matMeta||{};
   var gpl=(mat.gpl||ncbi.gpl||'').toUpperCase();
@@ -1359,7 +1681,7 @@ function showScript() {
   var n=mat.nSamples||ncbi.nSamples||0;
   var useIdat=S.fileChoice==='idat';
 
-  var script=useIdat?buildIdatScript(gse,arr,n):buildSigScript(gse,arr,S.signalFmt,S.signalFile,n);
+  var script=useIdat?buildIdatScript(gse,arr,n,S.regions,S.aggFunc):buildSigScript(gse,arr,S.signalFmt,S.signalFile,n,S.regions,S.aggFunc);
   S.rScript=script;
 
   var runTime=runTimeEst(n,arr,useIdat);
@@ -1367,8 +1689,18 @@ function showScript() {
   var methodStr=useIdat?('minfi <code>'+(arr==='27K'?'preprocessQuantile':'preprocessFunnorm')+'</code>'):'beta computation from signal table';
   var probeNote=n>0?('~ probes × '+n+' samples'):'probes × samples';
 
+  var regionLabels = {
+    all:           'all annotated probes',
+    promoter:      'promoter regions (TSS200, TSS1500, 1stExon)',
+    body:          'gene body (Body)',
+    promoter_body: 'promoter + gene body',
+  };
+  var aggLabels = { mean:'mean', median:'median', pc1:'PC1' };
+  var geneLevelNote = 'Gene-level betas — '+
+    esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
+    esc(aggLabels[S.aggFunc]||'mean');
   var html=[
-    '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
+    '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 4 files:</p>',
     '<ul class="out-list">',
     '<li><span class="out-num">1</span><div>',
     '<div class="out-fname">'+esc(gse+'_series_metadata.tsv')+'</div>',
@@ -1378,7 +1710,10 @@ function showScript() {
     '<div class="out-desc">Sample phenotype / annotation table</div></div></li>',
     '<li><span class="out-num">3</span><div>',
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
-    '<div class="out-desc">Normalized beta values ('+esc(probeNote)+', values 0–1)</div></div></li>',
+    '<div class="out-desc">Normalized probe-level beta values ('+esc(probeNote)+', values 0–1)</div></div></li>',
+    '<li><span class="out-num">4</span><div>',
+    '<div class="out-fname">'+esc(gse+'_gene_level_betas.tsv')+'</div>',
+    '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
     '</ul>',
     '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong></p>',
     '<div class="r-wrap">',
