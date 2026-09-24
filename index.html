@@ -1,10 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MethylScript</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"></script>
-
 <style>
 /* ── Tokens ── */
 :root {
@@ -22,18 +25,14 @@
   --accent-text:    #0E4760;
   --success:        #1A7A4A;
   --error:          #C0392B;
-  --recommend:      #7A5C00;
-  --recommend-bg:   #FFF8E1;
 }
-
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    color-scheme: dark;
     --bg:             #0E1217;
     --surface:        #161C23;
     --surface-alt:    #1A2230;
     --border:         #252D38;
-    --border-subtle:  #1E2833;
+    --border-subtle:  #1E2633;
     --text:           #EEF0F3;
     --text-2:         #8A9BAD;
     --text-3:         #4E5E6E;
@@ -43,18 +42,14 @@
     --accent-text:    #7ECDE8;
     --success:        #2ECC71;
     --error:          #E74C3C;
-    --recommend:      #D4A800;
-    --recommend-bg:   #1E1A00;
   }
 }
-
 :root[data-theme="dark"] {
-  color-scheme: dark;
   --bg:             #0E1217;
   --surface:        #161C23;
   --surface-alt:    #1A2230;
   --border:         #252D38;
-  --border-subtle:  #1E2833;
+  --border-subtle:  #1E2633;
   --text:           #EEF0F3;
   --text-2:         #8A9BAD;
   --text-3:         #4E5E6E;
@@ -64,62 +59,54 @@
   --accent-text:    #7ECDE8;
   --success:        #2ECC71;
   --error:          #E74C3C;
-  --recommend:      #D4A800;
-  --recommend-bg:   #1E1A00;
 }
 
+/* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
-  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  padding: 28px 24px 80px;
+  padding: 28px 24px 100px;
   -webkit-font-smoothing: antialiased;
-  line-height: 1.5;
 }
+a { color: var(--accent); }
 
+/* ── Header ── */
 header {
   max-width: 680px;
   margin: 0 auto 64px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  display: flex; align-items: flex-start; justify-content: space-between;
 }
-
-.logo-mark { display: flex; align-items: center; gap: 10px; }
+.logo-mark { display: flex; align-items: center; gap: 12px; }
 .logo-icon {
-  width: 32px; height: 32px; border-radius: 8px;
+  width: 34px; height: 34px; border-radius: 9px;
   background: var(--accent);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.logo-icon svg { display: block; }
 .logo-text { display: flex; flex-direction: column; gap: 1px; }
-.logo-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; line-height: 1; }
-.logo-org  { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-3); letter-spacing: 0.04em; line-height: 1; }
-.header-tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.05em; padding-top: 2px; }
+.logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.logo-org  { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.04em; }
+.header-tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.05em; }
 
+/* ── Main ── */
 main { max-width: 680px; margin: 0 auto; }
 
-/* ── Input Stage ── */
-#input-stage { text-align: center; padding-bottom: 8px; transition: opacity 0.3s ease; }
-#input-stage.locked { opacity: 0.55; pointer-events: none; }
-
+/* ── Hero / input stage ── */
 .eyebrow {
-  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 22px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 22px;
 }
-
 .hero-heading {
   font-size: clamp(26px, 5vw, 38px); font-weight: 300;
-  letter-spacing: -0.025em; color: var(--text);
-  line-height: 1.2; margin-bottom: 12px; text-wrap: balance;
+  letter-spacing: -0.025em; line-height: 1.2; margin-bottom: 12px; text-wrap: balance;
 }
 .hero-heading strong { font-weight: 600; }
-.hero-sub { font-size: 15px; color: var(--text-2); line-height: 1.6; margin-bottom: 40px; text-wrap: balance; }
+.hero-sub { font-size: 15px; color: var(--text-2); line-height: 1.6; margin-bottom: 40px; }
+
+#input-stage { padding-bottom: 8px; }
+#input-stage.locked { opacity: 0.55; pointer-events: none; }
 
 .id-widget {
   display: flex; align-items: center;
@@ -129,14 +116,12 @@ main { max-width: 680px; margin: 0 auto; }
   transition: border-color 0.15s, box-shadow 0.15s; text-align: left;
 }
 .id-widget:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
-
 .id-prefix {
   padding: 0 4px 0 20px;
   font-family: 'IBM Plex Mono', monospace; font-size: 19px;
   color: var(--text-3); user-select: none; white-space: nowrap;
   letter-spacing: 0.02em; flex-shrink: 0;
 }
-
 #series-input {
   flex: 1; border: none; outline: none; background: transparent;
   font-family: 'IBM Plex Mono', monospace; font-size: 19px;
@@ -144,11 +129,9 @@ main { max-width: 680px; margin: 0 auto; }
   letter-spacing: 0.03em; caret-color: var(--accent); min-width: 0;
 }
 #series-input::placeholder { color: var(--border); font-weight: 400; }
-
 .id-submit {
   margin: 6px; padding: 10px 22px;
-  background: var(--accent); color: #fff;
-  border: none; border-radius: 8px;
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
   font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500;
   cursor: pointer; transition: background 0.15s, transform 0.1s;
   flex-shrink: 0; white-space: nowrap;
@@ -156,30 +139,30 @@ main { max-width: 680px; margin: 0 auto; }
 .id-submit:hover  { background: var(--accent-hover); }
 .id-submit:active { transform: scale(0.97); }
 .id-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-
 .id-hint  { margin-top: 11px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-3); }
 .id-error { margin-top: 10px; font-size: 13px; color: var(--error); display: none; }
 
-/* ── Reveal sections ── */
+/* ── Reveal ── */
 .reveal-section { opacity: 0; transform: translateY(14px); transition: opacity 0.38s ease, transform 0.38s ease; display: none; }
 .reveal-section.show    { display: block; }
 .reveal-section.visible { opacity: 1; transform: translateY(0); }
-
 .section-divider { height: 1px; background: var(--border-subtle); margin: 36px 0; }
 
-/* ── Chat ── */
+/* ── Chat section ── */
 .chat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
-.chat-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease infinite; }
-@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.85); } }
+.chat-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: chatpulse 2s ease infinite; }
+@keyframes chatpulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);} }
 .chat-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-2); }
 .chat-label span { color: var(--accent); }
 
-.chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+#chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+
+/* ── Message bubbles ── */
 .msg-row { display: flex; }
 .msg-row.system { justify-content: flex-start; }
 .msg-row.user   { justify-content: flex-end; }
-.msg-bubble { padding: 12px 16px; font-size: 14px; line-height: 1.58; max-width: 84%; }
-
+.msg-row.alert  { justify-content: flex-start; }
+.msg-bubble { padding: 12px 16px; font-size: 14px; line-height: 1.58; max-width: 82%; }
 .msg-row.system .msg-bubble {
   background: var(--surface); border: 1px solid var(--border-subtle);
   border-radius: 3px 14px 14px 14px; color: var(--text);
@@ -189,139 +172,142 @@ main { max-width: 680px; margin: 0 auto; }
   background: var(--accent-subtle); border-radius: 14px 3px 14px 14px;
   color: var(--accent-text); font-weight: 500;
 }
-
+.msg-row.alert .msg-bubble {
+  background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
+  border-radius: 3px 14px 14px 14px; font-size: 13px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .msg-row.alert .msg-bubble {
+    background: #1f1a00; border-color: #854d0e; color: #fcd34d;
+  }
+}
+:root[data-theme="dark"] .msg-row.alert .msg-bubble {
+  background: #1f1a00; border-color: #854d0e; color: #fcd34d;
+}
+.msg-bubble p+p { margin-top: 7px; }
 .msg-bubble strong { font-weight: 600; }
-.msg-bubble em     { font-style: italic; color: var(--text-2); }
-.msg-bubble code   { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px; }
+.msg-bubble em { font-style: italic; color: var(--text-2); }
+.msg-bubble code {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+  background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px;
+}
 .msg-row.user .msg-bubble code { background: rgba(0,0,0,0.12); }
 
-/* option cards inside chat bubbles */
-.option-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.opt-card {
-  background: var(--surface-alt); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 12px;
-}
-.opt-card.recommended { border-color: var(--recommend); background: var(--recommend-bg); }
-.opt-num  { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; color: var(--accent); }
-.opt-card.recommended .opt-num { color: var(--recommend); }
-.opt-label { font-weight: 600; font-size: 13.5px; color: var(--text); }
-.opt-tag {
-  display: inline-block; font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
-  background: var(--recommend); color: #fff;
-  padding: 1px 6px; border-radius: 3px; margin-left: 6px;
-  vertical-align: middle;
-}
-.opt-desc { font-size: 12.5px; color: var(--text-2); margin-top: 3px; line-height: 1.5; }
-
+/* ── Typing dots ── */
 .typing-row { display: flex; }
 .typing-bubble {
   display: flex; align-items: center; gap: 5px; padding: 14px 18px;
   background: var(--surface); border: 1px solid var(--border-subtle);
   border-radius: 3px 14px 14px 14px;
 }
-.typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); animation: bounce 1.3s ease infinite; }
-.typing-dot:nth-child(2) { animation-delay: 0.17s; }
-.typing-dot:nth-child(3) { animation-delay: 0.34s; }
-@keyframes bounce { 0%,60%,100% { transform:translateY(0); opacity:0.35; } 30% { transform:translateY(-5px); opacity:1; } }
+.typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); animation: tdot 1.3s ease infinite; }
+.typing-dot:nth-child(2) { animation-delay: .17s; }
+.typing-dot:nth-child(3) { animation-delay: .34s; }
+@keyframes tdot { 0%,60%,100%{transform:translateY(0);opacity:.35;}30%{transform:translateY(-5px);opacity:1;} }
 
-.chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
-
-#chat-textarea {
-  flex: 1; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
-  color: var(--text); background: var(--surface);
-  border: 1.5px solid var(--border); border-radius: 10px;
-  padding: 11px 14px; outline: none; resize: none;
-  min-height: 44px; max-height: 120px; overflow-y: auto;
-  line-height: 1.45; transition: border-color 0.15s;
-}
-#chat-textarea:focus { border-color: var(--accent); }
-#chat-textarea::placeholder { color: var(--text-3); }
-#chat-textarea:disabled { opacity: 0.5; }
-
-.chat-send-btn {
-  width: 42px; height: 42px; border-radius: 10px; border: none;
-  background: var(--accent); color: #fff; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  transition: background 0.15s, transform 0.1s;
-}
-.chat-send-btn:hover  { background: var(--accent-hover); }
-.chat-send-btn:active { transform: scale(0.95); }
-.chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-/* ── Progress ── */
-.progress-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.progress-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-2); }
-#progress-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); }
-
-.progress-track { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 28px; }
-.progress-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
-
-.progress-steps { display: flex; flex-direction: column; gap: 12px; }
-.p-step { display: flex; align-items: center; gap: 13px; font-size: 14px; color: var(--text-3); transition: color 0.3s; }
-.p-step.active { color: var(--text); }
-.p-step.done   { color: var(--text-2); }
-.p-step-icon {
-  width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  font-size: 10px; font-family: 'IBM Plex Mono', monospace;
-  transition: border-color 0.3s, background 0.3s, color 0.3s;
-}
-.p-step.active .p-step-icon { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
-.p-step.done   .p-step-icon { border-color: var(--accent); background: var(--accent); color: #fff; }
-
-/* ── Output ── */
-.output-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
-.output-meta-name   { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
-.output-meta-detail { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.03em; }
-.output-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.btn-icon {
-  display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+/* ── Choice buttons ── */
+#choice-panel { margin-top: 4px; padding-bottom: 8px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.c-btn {
+  padding: 9px 20px; border-radius: 99px;
+  border: 1.5px solid var(--accent); color: var(--accent); background: transparent;
   font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500;
-  cursor: pointer; border: none; transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+  cursor: pointer; transition: background .12s, color .12s;
 }
-.btn-icon:active { transform: scale(0.96); }
-.btn-copy { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); }
-.btn-copy:hover  { color: var(--accent); border-color: var(--accent); }
-.btn-copy.copied { color: var(--success); border-color: var(--success); }
-.btn-save { background: var(--accent); color: #fff; }
-.btn-save:hover { background: var(--accent-hover); }
+.c-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.c-btn.primary { background: var(--accent); color: #fff; }
+.c-btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+.c-btn:disabled { opacity: .45; cursor: default; border-color: var(--border); color: var(--text-2); }
 
-.code-wrap { border-radius: 12px; overflow: hidden; border: 1px solid #21262D; }
-.code-wrap pre { margin: 0; background: #0D1117; overflow-x: auto; padding: 24px; }
-.code-wrap pre code {
-  font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
-  line-height: 1.7; display: block; white-space: pre; tab-size: 2;
+/* ── Sample chips ── */
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.chip { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 3px 8px; border-radius: 5px; background: var(--surface-alt); color: var(--text-2); border: 1px solid var(--border); }
+
+/* ── Meta table ── */
+.meta-tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.meta-tbl td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.meta-tbl td:first-child { color: var(--text-2); width: 34%; white-space: nowrap; font-size: 12px; }
+.meta-tbl tr:last-child td { border-bottom: none; }
+
+/* ── File badge ── */
+.file-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  padding: 3px 9px; border-radius: 6px;
+  background: var(--surface-alt); border: 1px solid var(--border);
+  color: var(--text-2); margin: 4px 0;
 }
-.hljs                 { background: transparent; color: #e6edf3; }
-.hljs-comment         { color: #6e7681; font-style: italic; }
-.hljs-string          { color: #a5d6ff; }
-.hljs-number          { color: #79c0ff; }
-.hljs-keyword         { color: #ff7b72; }
-.hljs-built_in        { color: #ffa657; }
+
+/* ── Preview block ── */
+.preview {
+  margin-top: 8px; background: #0D1117;
+  border-radius: 7px; padding: 9px 12px;
+  overflow-x: auto; max-height: 160px; overflow-y: auto;
+}
+.preview pre { font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; color: #c9d1d9; white-space: pre; }
+
+/* ── Output list ── */
+.out-list { list-style: none; margin-top: 8px; }
+.out-list li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.out-list li:last-child { border-bottom: none; }
+.out-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.out-fname { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); word-break: break-all; }
+.out-desc { font-size: 12px; color: var(--text-2); }
+
+/* ── R script block ── */
+.r-wrap { margin-top: 10px; border-radius: 12px; overflow: hidden; border: 1px solid #21262D; }
+.r-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: #161B22; border-bottom: 1px solid #21262D;
+}
+.r-head-name { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8B949E; }
+.copy-btn {
+  padding: 3px 10px; border-radius: 5px;
+  border: 1px solid #30363D; background: #21262D; color: #8B949E;
+  cursor: pointer; font-size: 11px; font-family: 'IBM Plex Sans', sans-serif;
+  transition: background .12s, color .12s;
+}
+.copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.r-body { overflow-x: auto; max-height: 480px; overflow-y: auto; background: #0D1117; }
+.r-body pre { margin: 0; padding: 20px; font-size: 12px; line-height: 1.65; }
+.hljs { background: transparent; color: #e6edf3; }
+.hljs-comment { color: #6e7681; font-style: italic; }
+.hljs-string { color: #a5d6ff; }
+.hljs-number { color: #79c0ff; }
+.hljs-keyword { color: #ff7b72; }
+.hljs-built_in { color: #ffa657; }
 .hljs-title.function_ { color: #d2a8ff; }
-.hljs-params          { color: #e6edf3; }
-.hljs-operator        { color: #ff7b72; }
-.hljs-punctuation     { color: #8b949e; }
-.hljs-literal         { color: #79c0ff; }
+.hljs-operator { color: #ff7b72; }
+.hljs-punctuation { color: #8b949e; }
+.hljs-literal { color: #79c0ff; }
 
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Mobile ── */
 @media (max-width: 480px) {
   body { padding: 20px 16px 60px; }
   header { margin-bottom: 40px; }
   .hero-heading { font-size: 24px; }
   #series-input, .id-prefix { font-size: 16px; }
   .id-submit { padding: 10px 16px; }
-  .msg-bubble { max-width: 96%; }
-  .output-top { flex-direction: column; }
-  .output-actions { width: 100%; }
-  .btn-icon { flex: 1; justify-content: center; }
+  .msg-bubble { max-width: 94%; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .reveal-section, .progress-bar, .p-step, .p-step-icon { transition: none; }
-  .chat-pulse, .typing-dot { animation: none; opacity: 1; transform: none; }
+  .reveal-section { transition: none; }
+  .chat-pulse, .typing-dot { animation: none; opacity: 1; }
 }
 </style>
+</head>
+<body>
 
 <header>
   <div class="logo-mark">
@@ -345,14 +331,11 @@ main { max-width: 680px; margin: 0 auto; }
     <p class="eyebrow">GEO Series ID</p>
     <h1 class="hero-heading">Generate a <strong>methylation pipeline</strong><br>from any GEO dataset</h1>
     <p class="hero-sub">Enter an Illumina 27K, 450K, or EPIC array series ID to receive<br>a custom, publication-ready R analysis script.</p>
-
     <div class="id-widget">
       <span class="id-prefix">GSE</span>
-      <input
-        id="series-input" type="text" inputmode="numeric" placeholder="206879"
+      <input id="series-input" type="text" inputmode="numeric" placeholder="206879"
         autocomplete="off" autocorrect="off" spellcheck="false"
-        aria-label="GEO Series numeric ID"
-      >
+        aria-label="GEO Series numeric ID">
       <button class="id-submit" id="id-submit">Analyze →</button>
     </div>
     <p class="id-hint">Enter the numeric portion of the GSE accession number</p>
@@ -365,850 +348,1089 @@ main { max-width: 680px; margin: 0 auto; }
       <div class="chat-pulse"></div>
       <span class="chat-label">Reviewing <span id="chat-id-label">GSE—</span></span>
     </div>
-    <div class="chat-messages" id="chat-messages" role="log" aria-live="polite"></div>
-    <div class="chat-input-row" id="chat-input-row">
-      <textarea id="chat-textarea" placeholder="Type your answer…" rows="1" aria-label="Your answer"></textarea>
-      <button class="chat-send-btn" id="chat-send" title="Send answer">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M2 8h10M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
-  </section>
-
-  <section id="progress-stage" class="reveal-section">
-    <div class="section-divider"></div>
-    <div class="progress-label-row">
-      <span class="progress-eyebrow">Generating R Script</span>
-      <span id="progress-pct">0%</span>
-    </div>
-    <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
-    <div class="progress-steps">
-      <div class="p-step" data-pct="18"><div class="p-step-icon"></div><span>Fetching series metadata from GEO</span></div>
-      <div class="p-step" data-pct="38"><div class="p-step-icon"></div><span>Validating sample structure and array type</span></div>
-      <div class="p-step" data-pct="60"><div class="p-step-icon"></div><span>Analyzing experimental design</span></div>
-      <div class="p-step" data-pct="80"><div class="p-step-icon"></div><span>Building normalization &amp; QC pipeline</span></div>
-      <div class="p-step" data-pct="100"><div class="p-step-icon"></div><span>Writing gene-level R script</span></div>
-    </div>
-  </section>
-
-  <section id="output-stage" class="reveal-section">
-    <div class="section-divider"></div>
-    <div class="output-top">
-      <div>
-        <div class="output-meta-name">methylation_pipeline.R</div>
-        <div class="output-meta-detail" id="output-detail">GSE— · — array · — pipeline</div>
-      </div>
-      <div class="output-actions">
-        <button class="btn-icon btn-copy" id="btn-copy">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <rect x="3.5" y="3.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.25"/>
-            <path d="M3.5 3.5V2A1.5 1.5 0 0 1 5 .5h5A1.5 1.5 0 0 1 11.5 2v6A1.5 1.5 0 0 1 10 9.5H9" stroke="currentColor" stroke-width="1.25"/>
-          </svg>
-          Copy
-        </button>
-        <button class="btn-icon btn-save" id="btn-save">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path d="M6.5 1v7M3.5 5.5l3 2.5 3-2.5M1.5 10v1.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
-          </svg>
-          Save .R
-        </button>
-      </div>
-    </div>
-    <div class="code-wrap">
-      <pre><code class="language-r" id="r-code-output"></code></pre>
-    </div>
+    <div id="chat-messages" role="log" aria-live="polite"></div>
+    <div id="choice-panel"></div>
   </section>
 </main>
 
 <script>
-// ── State ────────────────────────────────────────────────────
-var gseId         = '';
-var detectedMeta  = null;
-var confirmedMeta = {};  // arrayType, dataFile, methGroup, unmethGroup, regions, aggFunc
-var QUESTIONS     = [];
-var currentQ      = 0;
-var rawScript     = '';
+'use strict';
 
-var GPL_MAP = {
-  'GPL8490':  '27K',
-  'GPL13534': '450K',
-  'GPL21145': 'EPIC',
-  'GPL23976': 'EPIC',
-  'GPL28271': 'EPIC',
+var EUTILS  = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
+var NCBI_P  = '&tool=methylscript&email=piccololab%40byu.edu';
+var GEO_FTP = 'https://ftp.ncbi.nlm.nih.gov/geo/series/';
+
+var GPL_TYPE = {
+  GPL8490:'27K', GPL13534:'450K',
+  GPL21145:'EPIC', GPL23976:'EPIC',
+  GPL28271:'EPICv2', GPL30021:'EPICv2',
 };
-var GPL_NAMES = {
-  'GPL8490':  'HumanMethylation27 (GPL8490)',
-  'GPL13534': 'HumanMethylation450 (GPL13534)',
-  'GPL21145': 'MethylationEPIC v1 (GPL21145)',
-  'GPL23976': 'MethylationEPIC (GPL23976)',
-  'GPL28271': 'MethylationEPIC v2 (GPL28271)',
+var GPL_NAME = {
+  GPL8490:  'Illumina HumanMethylation27 (27K)',
+  GPL13534: 'Illumina HumanMethylation450 (450K)',
+  GPL21145: 'Illumina MethylationEPIC (850K)',
+  GPL23976: 'Illumina MethylationEPIC (850K)',
+  GPL28271: 'Illumina MethylationEPIC v2.0',
+  GPL30021: 'Illumina MethylationEPIC v2.0',
 };
 
-// ── Elements ─────────────────────────────────────────────────
-var inputStage    = document.getElementById('input-stage');
-var chatStage     = document.getElementById('chat-stage');
-var progressStage = document.getElementById('progress-stage');
-var outputStage   = document.getElementById('output-stage');
-var seriesInput   = document.getElementById('series-input');
-var idSubmit      = document.getElementById('id-submit');
-var idError       = document.getElementById('id-error');
-var chatIdLabel   = document.getElementById('chat-id-label');
-var chatMessages  = document.getElementById('chat-messages');
-var chatTextarea  = document.getElementById('chat-textarea');
-var chatSend      = document.getElementById('chat-send');
-var progressBar   = document.getElementById('progress-bar');
-var progressPct   = document.getElementById('progress-pct');
-var pSteps        = document.querySelectorAll('.p-step');
-var rCodeOutput   = document.getElementById('r-code-output');
-var outputDetail  = document.getElementById('output-detail');
-var btnCopy       = document.getElementById('btn-copy');
-var btnSave       = document.getElementById('btn-save');
+var S = {
+  phase:'IDLE', gseId:null, ncbiMeta:null, matMeta:null,
+  signalFile:null, signalFmt:null, fileChoice:null, rScript:null,
+};
 
-// ── Reveal / hide ─────────────────────────────────────────────
-function reveal(el) {
-  el.classList.add('show');
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() { el.classList.add('visible'); });
-  });
+var chatMessages = document.getElementById('chat-messages');
+var choicePanel  = document.getElementById('choice-panel');
+var inputStage   = document.getElementById('input-stage');
+var chatStage    = document.getElementById('chat-stage');
+var seriesInput  = document.getElementById('series-input');
+var idSubmit     = document.getElementById('id-submit');
+var idError      = document.getElementById('id-error');
+var chatIdLabel  = document.getElementById('chat-id-label');
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function conceal(el) {
-  el.classList.remove('visible');
-  setTimeout(function() { el.classList.remove('show'); }, 380);
+function scrollBot() {
+  setTimeout(function(){ window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }, 60);
 }
-
-// ── GEO / NCBI eUtils helpers ─────────────────────────────────
-var EUTILS = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
-
-function eSearch(term, retmax) {
-  var url = EUTILS + 'esearch.fcgi?db=gds&term=' + encodeURIComponent(term) +
-            '&retmax=' + (retmax || 5) + '&retmode=json';
-  return fetch(url).then(function(r) { return r.json(); });
+function revealChat() {
+  chatStage.classList.add('show');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ chatStage.classList.add('visible'); }); });
 }
-function eSummary(ids) {
-  var idStr = Array.isArray(ids) ? ids.join(',') : String(ids);
-  var url = EUTILS + 'esummary.fcgi?db=gds&id=' + idStr + '&retmode=json';
-  return fetch(url).then(function(r) { return r.json(); });
-}
-function fileBasename(url) { return (url || '').split('/').pop().split('?')[0]; }
-function detectDataFile(files) {
-  var idat = files.find(function(f) { return /idat/i.test(f); });
-  if (idat) return idat;
-  var tar = files.find(function(f) { return /\.tar\.gz$/i.test(f); });
-  return tar || files[0] || null;
-}
-function detectArrayFromText(text) {
-  var t = (text || '').toLowerCase();
-  if (/27k|27,000|humanmethylation27|hm27/.test(t)) return '27K';
-  if (/epic|850k|850,000/.test(t)) return 'EPIC';
-  return '450K';
-}
-function detectGroups(titles) {
-  var methKeywords   = ['methylated','hypermethylated','tumor','cancer','disease','case','treated','positive','affected'];
-  var unmethKeywords = ['unmethylated','hypomethylated','normal','control','healthy','untreated','negative','unaffected'];
-  var tokenCounts = {};
-  titles.forEach(function(title) {
-    title.replace(/[_\-.\s]+/g, ' ').trim().split(/\s+/)
-      .map(function(t) { return t.toLowerCase(); })
-      .filter(function(t) { return t.length > 2 && !/^\d+$/.test(t); })
-      .forEach(function(t) { tokenCounts[t] = (tokenCounts[t] || 0) + 1; });
-  });
-  var mToken = methKeywords.find(function(k) { return tokenCounts[k] > 0; });
-  var uToken = unmethKeywords.find(function(k) { return tokenCounts[k] > 0; });
-  if (mToken && uToken) return { meth: cap(mToken), unmeth: cap(uToken), certain: true };
-  var half = Math.ceil(titles.length / 2);
-  var topTwo = Object.keys(tokenCounts)
-    .filter(function(t) { return tokenCounts[t] >= 1 && tokenCounts[t] <= half; })
-    .sort(function(a, b) { return tokenCounts[b] - tokenCounts[a]; }).slice(0, 2);
-  if (topTwo.length === 2) return { meth: cap(topTwo[0]), unmeth: cap(topTwo[1]), certain: false };
-  return null;
-}
-function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-function fetchSeriesMeta(gse) {
-  return eSearch(gse + '[ACCN]', 20).then(function(data) {
-    var ids = ((data.esearchresult || {}).idlist || []);
-    if (!ids.length) throw new Error('Series not found in GEO.');
-    var uid = ids.find(function(id) { return /^200/.test(id); }) || ids[0];
-    return eSummary(uid);
-  }).then(function(data) {
-    var result = data.result || {};
-    var keys = Object.keys(result).filter(function(k) { return k !== 'uids'; });
-    if (!keys.length) throw new Error('Could not load series summary.');
-    var e = result[keys[0]];
-    var gpl = ((e.gpl || '')).toUpperCase();
-    var suppRaw = e.suppfiles || '';
-    var suppFiles = suppRaw.split(/;\s*|\t/).map(function(s) { return s.trim(); }).filter(Boolean);
-    return {
-      gpl: gpl, gplName: GPL_NAMES[gpl] || (gpl || 'Unknown platform'),
-      arrayType: GPL_MAP[gpl] || detectArrayFromText(e.title || ''),
-      title: e.title || gse, suppFiles: suppFiles,
-      dataFile: detectDataFile(suppFiles), nSamples: parseInt(e.n_samples) || 0,
-    };
-  });
-}
-function fetchSampleTitles(gse) {
-  return eSearch(gse + '[ACCN] AND gsm[ETYP]', 12).then(function(data) {
-    var ids = ((data.esearchresult || {}).idlist || []).slice(0, 12);
-    if (!ids.length) return [];
-    return eSummary(ids);
-  }).then(function(data) {
-    var result = data.result || {};
-    return Object.keys(result).filter(function(k) { return k !== 'uids' && result[k].title; })
-      .map(function(k) { return result[k].title; });
-  }).catch(function() { return []; });
-}
-
-// ── Stage 1: Series ID ────────────────────────────────────────
-seriesInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') submitId(); });
-idSubmit.addEventListener('click', submitId);
-
-function submitId() {
-  var raw = seriesInput.value.trim().replace(/^GSE/i, '');
-  if (!/^\d{3,}$/.test(raw)) { idError.style.display = 'block'; seriesInput.focus(); return; }
-  idError.style.display = 'none';
-  gseId = 'GSE' + raw;
-  inputStage.classList.add('locked');
-  idSubmit.disabled = true; seriesInput.disabled = true;
-  chatIdLabel.textContent = gseId;
-  reveal(chatStage);
-  setTimeout(function() {
-    var typingEl = addTyping();
-    addMessage('system', 'Looking up <strong>' + escHtml(gseId) + '</strong> in GEO — this takes a moment…');
-    Promise.all([fetchSeriesMeta(gseId), fetchSampleTitles(gseId)]).then(function(results) {
-      typingEl.remove();
-      detectedMeta = results[0];
-      detectedMeta.groups = detectGroups(results[1]);
-      buildQuestions();
-      setTimeout(function() { askQuestion(0); }, 500);
-    }).catch(function(err) {
-      typingEl.remove();
-      addMessage('system', '⚠️ ' + escHtml(err.message || 'Could not reach GEO.') + '<br><em>No problem — I\'ll ask for the details manually.</em>');
-      detectedMeta = { gpl: null, gplName: null, arrayType: null, dataFile: null, groups: null, suppFiles: [] };
-      buildQuestions();
-      setTimeout(function() { askQuestion(0); }, 700);
-    });
-  }, 500);
-}
-
-// ── Build questions ───────────────────────────────────────────
-function buildQuestions() {
-  var m = detectedMeta;
-  QUESTIONS = [];
-
-  // Q1: Array type
-  var q1, q1ph;
-  if (m.arrayType) {
-    var fullNames = { '27K': 'HumanMethylation27 (27K)', '450K': 'HumanMethylation450 (450K)', 'EPIC': 'EPIC (850K)' };
-    q1 = 'Based on the platform record (<code>' + escHtml(m.gplName || m.gpl || 'unknown') + '</code>), ' +
-         'I\'ve identified this dataset as the <strong>' + fullNames[m.arrayType] + '</strong> array. ' +
-         'Is that correct? (Reply <code>yes</code> to confirm, or enter <code>27K</code>, <code>450K</code>, or <code>EPIC</code> to correct it.)';
-    q1ph = 'yes · 27K · 450K · EPIC';
-  } else {
-    q1 = 'I wasn\'t able to detect the array platform automatically. Which array was used? Please enter <code>27K</code>, <code>450K</code>, or <code>EPIC</code>.';
-    q1ph = '27K · 450K · EPIC';
-  }
-  QUESTIONS.push({ id: 'array_type', prompt: q1, placeholder: q1ph, detected: m.arrayType });
-
-  // Q2: Data file
-  var q2, q2ph;
-  var fname = m.dataFile ? fileBasename(m.dataFile) : null;
-  if (fname) {
-    var isIdat = /idat/i.test(fname);
-    q2 = 'I found the following supplementary file in GEO:<br><code>' + escHtml(fname) + '</code>' +
-         (isIdat ? '<br><em>This looks like an IDAT archive — the standard raw format for Illumina arrays.</em>' : '');
-    if (m.suppFiles.length > 1) {
-      var others = m.suppFiles.slice(1).map(function(f) { return '<code>' + escHtml(fileBasename(f)) + '</code>'; });
-      q2 += '<br><em>Other files: ' + others.join(', ') + '</em>';
-    }
-    q2 += '<br><br>Should I use this file for the analysis? (Reply <code>yes</code> to confirm, or enter the correct filename.)';
-    q2ph = 'yes · or enter correct filename';
-  } else {
-    q2 = 'I couldn\'t find a supplementary data file for this series. What is the filename of the data to use? (e.g. <code>GSE12345_RAW.tar.gz</code>)';
-    q2ph = 'e.g. GSE12345_RAW.tar.gz';
-  }
-  QUESTIONS.push({ id: 'data_file', prompt: q2, placeholder: q2ph, detected: fname });
-
-  // Q3: Group assignment
-  var q3, q3ph;
-  var g = m.groups;
-  var hasIdat = fname && /idat/i.test(fname);
-  if (g && g.certain) {
-    q3 = (hasIdat ? 'IDAT files handle methylated (Cy5) and unmethylated (Cy3) channels automatically. ' : '') +
-         'Based on the sample titles, I\'ve identified two groups:<br>' +
-         '&bull; <strong>' + escHtml(g.meth) + '</strong> — methylated group<br>' +
-         '&bull; <strong>' + escHtml(g.unmeth) + '</strong> — unmethylated / reference group<br><br>' +
-         'Is that correct? (Reply <code>yes</code> to confirm, or enter as <code>GroupA vs GroupB</code>.)';
-    q3ph = 'yes · or e.g. Tumor vs Normal';
-  } else if (g && !g.certain) {
-    q3 = (hasIdat ? 'IDAT files handle methylated (Cy5) and unmethylated (Cy3) channels automatically. ' : '') +
-         'I detected possible sample groups: <strong>' + escHtml(g.meth) + '</strong> and <strong>' + escHtml(g.unmeth) + '</strong>. ' +
-         'Which is the methylated group and which is the reference? ' +
-         '(Reply <code>yes</code> if the order above is correct — methylated first — or enter as <code>Methylated vs Unmethylated</code>.)';
-    q3ph = 'yes · or GroupA vs GroupB';
-  } else {
-    q3 = (hasIdat ? 'IDAT files handle methylated (Cy5) and unmethylated (Cy3) channels automatically. ' : '') +
-         'I wasn\'t able to identify sample group labels. Please specify the two groups, methylated first: (e.g. <code>Tumor vs Normal</code>)';
-    q3ph = 'e.g. Tumor vs Normal';
-  }
-  QUESTIONS.push({ id: 'column_assign', prompt: q3, placeholder: q3ph, detected: g });
-
-  // Q4: Genomic regions
-  var q4 = 'The script will aggregate probe-level betas into <strong>gene-level values</strong>. Which genomic regions should be included?' +
-    '<div class="option-list">' +
-    '<div class="opt-card recommended"><div class="opt-num">1</div><div class="opt-label">Promoter only (TSS200 + TSS1500)<span class="opt-tag">Recommended</span></div><div class="opt-desc">Captures CpG sites most directly linked to transcriptional silencing. Best for most expression-linked methylation studies and DMP analyses.</div></div>' +
-    '<div class="opt-card"><div class="opt-num">2</div><div class="opt-label">Promoter + CpG Islands</div><div class="opt-desc">Adds probes in CpG island bodies regardless of gene feature. Best when your hypothesis centers on island hypermethylation — common in cancer epigenomics.</div></div>' +
-    '<div class="opt-card"><div class="opt-num">3</div><div class="opt-label">All annotated regions</div><div class="opt-desc">Includes promoter, gene body, UTRs, and exons. Best for comprehensive analyses or studies where gene body methylation is biologically relevant (e.g., transcription elongation, alternative splicing).</div></div>' +
-    '</div>' +
-    '<br>Enter <code>1</code>, <code>2</code>, or <code>3</code>.';
-  QUESTIONS.push({ id: 'gene_regions', prompt: q4, placeholder: '1 · 2 · 3', detected: null });
-
-  // Q5: Aggregation function
-  var q5 = 'How should probe-level betas be combined into a single gene-level value?' +
-    '<div class="option-list">' +
-    '<div class="opt-card recommended"><div class="opt-num">1</div><div class="opt-label">Mean<span class="opt-tag">Recommended</span></div><div class="opt-desc">Averages all probes in the selected region(s). Simple, interpretable, and the most widely published approach. The right default for most datasets.</div></div>' +
-    '<div class="opt-card"><div class="opt-num">2</div><div class="opt-label">Median</div><div class="opt-desc">Uses the middle value rather than the average. More robust when a few probes behave as outliers — for example due to technical noise or residual SNP overlap.</div></div>' +
-    '<div class="opt-card"><div class="opt-num">3</div><div class="opt-label">First Principal Component (PC1)</div><div class="opt-desc">Extracts the axis of maximum variance across all probes for each gene. Best when probes in a gene are heterogeneous and you want a single score capturing their dominant pattern. Results are less directly interpretable as beta values.</div></div>' +
-    '</div>' +
-    '<br>Enter <code>1</code>, <code>2</code>, or <code>3</code>.';
-  QUESTIONS.push({ id: 'agg_func', prompt: q5, placeholder: '1 · 2 · 3', detected: null });
-}
-
-// ── Stage 2: Chat ─────────────────────────────────────────────
-function addMessage(type, html) {
+function addMsg(role, html) {
   var row = document.createElement('div');
-  row.className = 'msg-row ' + type;
-  row.innerHTML = '<div class="msg-bubble">' + html + '</div>';
+  row.className = 'msg-row ' + role;
+  var bub = document.createElement('div');
+  bub.className = 'msg-bubble';
+  bub.innerHTML = html;
+  row.appendChild(bub);
   chatMessages.appendChild(row);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  return row;
+  scrollBot();
+  return bub;
 }
 function addTyping() {
   var row = document.createElement('div');
   row.className = 'typing-row';
-  row.innerHTML = '<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  var bub = document.createElement('div');
+  bub.className = 'typing-bubble';
+  bub.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  row.appendChild(bub);
   chatMessages.appendChild(row);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  scrollBot();
   return row;
 }
-function askQuestion(index) {
-  chatTextarea.disabled = true; chatSend.disabled = true;
-  var t = addTyping();
-  setTimeout(function() {
-    t.remove();
-    addMessage('system', QUESTIONS[index].prompt);
-    chatTextarea.placeholder = QUESTIONS[index].placeholder;
-    chatTextarea.disabled = false; chatSend.disabled = false;
-    chatTextarea.focus();
-  }, 600 + Math.random() * 300);
-}
-
-chatTextarea.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAnswer(); } });
-chatSend.addEventListener('click', sendAnswer);
-chatTextarea.addEventListener('input', function() {
-  chatTextarea.style.height = 'auto';
-  chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 120) + 'px';
-});
-
-function sendAnswer() {
-  var val = chatTextarea.value.trim();
-  if (!val) return;
-  chatTextarea.disabled = true; chatSend.disabled = true;
-  chatTextarea.value = ''; chatTextarea.style.height = '';
-
-  var q        = QUESTIONS[currentQ];
-  var isYes    = /^y(es|ep|eah)?\.?$/i.test(val);
-  var detected = q.detected;
-
-  if (q.id === 'array_type') {
-    confirmedMeta.arrayType = isYes ? (detected || '450K') : parseArrayType(val);
-
-  } else if (q.id === 'data_file') {
-    confirmedMeta.dataFile = isYes ? detected : val;
-
-  } else if (q.id === 'column_assign') {
-    if (isYes && detected) {
-      confirmedMeta.methGroup = detected.meth; confirmedMeta.unmethGroup = detected.unmeth;
-    } else {
-      var parts = val.split(/\s+vs\.?\s+/i);
-      confirmedMeta.methGroup   = (parts[0] || '').trim() || (detected ? detected.meth   : 'Methylated');
-      confirmedMeta.unmethGroup = (parts[1] || '').trim() || (detected ? detected.unmeth : 'Unmethylated');
-    }
-
-  } else if (q.id === 'gene_regions') {
-    var rn = parseInt(val.trim());
-    confirmedMeta.regions = (rn === 2) ? '2' : (rn === 3) ? '3' : '1';
-
-  } else if (q.id === 'agg_func') {
-    var an = parseInt(val.trim());
-    confirmedMeta.aggFunc = (an === 2) ? 'median' : (an === 3) ? 'pc1' : 'mean';
-  }
-
-  addMessage('user', escHtml(val));
-  currentQ++;
-
-  if (currentQ < QUESTIONS.length) {
-    setTimeout(function() { askQuestion(currentQ); }, 300);
-  } else {
-    var t = addTyping();
-    setTimeout(function() {
-      t.remove();
-      addMessage('system', 'Got it — building your pipeline now…');
-      setTimeout(beginGeneration, 900);
-    }, 600);
-  }
-}
-
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function parseArrayType(answer) {
-  var a = (answer || '').toLowerCase().replace(/[\s,.-]/g, '');
-  if (/27k|27000|hm27|humanmethylation27/.test(a)) return '27K';
-  if (/epic|850k|850000|epicv2/.test(a))           return 'EPIC';
-  return '450K';
-}
-
-// ── Stage 3: Progress ─────────────────────────────────────────
-function beginGeneration() {
-  conceal(chatStage);
-  setTimeout(function() { reveal(progressStage); runSteps(); }, 420);
-}
-function runSteps() {
-  var steps = Array.from(pSteps);
-  var delays = [900, 1300, 1100, 1500, 950];
-  var i = 0;
-  function advance() {
-    if (i > 0) {
-      steps[i-1].classList.remove('active'); steps[i-1].classList.add('done');
-      steps[i-1].querySelector('.p-step-icon').textContent = '✓';
-    }
-    if (i >= steps.length) { setTimeout(function() { conceal(progressStage); setTimeout(showOutput, 420); }, 500); return; }
-    steps[i].classList.add('active');
-    var pct = parseInt(steps[i].dataset.pct);
-    progressBar.style.width = pct + '%'; progressPct.textContent = pct + '%';
-    i++;
-    setTimeout(advance, delays[i-1] || 1000);
-  }
-  advance();
-}
-
-// ── Stage 4: Output ───────────────────────────────────────────
-var ARRAY_LABELS = { '27K': 'HumanMethylation27 (27K)', '450K': 'HumanMethylation450 (450K)', 'EPIC': 'EPIC (850K)' };
-var PIPELINE_LABELS = { '27K': 'minfi · bumphunter', '450K': 'ChAMP · DMRcate', 'EPIC': 'ChAMP · DMRcate' };
-var REGION_LABELS = { '1': 'promoter-only', '2': 'promoter+islands', '3': 'all-regions' };
-var AGG_LABELS    = { 'mean': 'mean', 'median': 'median', 'pc1': 'PC1' };
-
-function showOutput() {
-  var arrayType   = confirmedMeta.arrayType   || '450K';
-  var methGroup   = confirmedMeta.methGroup   || 'Methylated';
-  var unmethGroup = confirmedMeta.unmethGroup || 'Unmethylated';
-  var dataFile    = confirmedMeta.dataFile    || null;
-  var regions     = confirmedMeta.regions     || '1';
-  var aggFunc     = confirmedMeta.aggFunc     || 'mean';
-
-  outputDetail.textContent =
-    gseId + ' · ' + ARRAY_LABELS[arrayType] + ' · ' + PIPELINE_LABELS[arrayType] +
-    ' · gene-level/' + REGION_LABELS[regions] + '/' + AGG_LABELS[aggFunc];
-
-  rawScript = buildScript(gseId, methGroup, unmethGroup, arrayType, dataFile, regions, aggFunc);
-  rCodeOutput.textContent = rawScript;
-  hljs.highlightElement(rCodeOutput);
-  reveal(outputStage);
-}
-
-// ── R Script builder ──────────────────────────────────────────
-function buildScript(gse, methGroup, unmethGroup, arrayType, dataFile, regions, aggFunc) {
-  var date = new Date().toISOString().split('T')[0];
-  var g1   = methGroup.replace(/\s+/g, '_');
-  var g2   = unmethGroup.replace(/\s+/g, '_');
-  var s    = 1;
-
-  function hdr(title) {
-    var line = '# --- ' + s++ + '. ' + title + ' ';
-    return line + Array(Math.max(2, 66 - line.length) + 1).join('-');
-  }
-  function rep(ch, n) { return Array(n + 1).join(ch); }
-
-  var ARRAY_DESC = {
-    '27K':  'Illumina HumanMethylation27 (27K)',
-    '450K': 'Illumina HumanMethylation450 (450K)',
-    'EPIC': 'Illumina EPIC (850K)',
-  };
-
-  // Region label for comments
-  var regionDescMap = {
-    '1': 'Promoter only (TSS200 + TSS1500)',
-    '2': 'Promoter (TSS200/TSS1500) + CpG Islands',
-    '3': 'All annotated regions (promoter, gene body, UTRs, exons)',
-  };
-  var aggDescMap = { 'mean': 'Mean', 'median': 'Median', 'pc1': 'First Principal Component (PC1)' };
-
-  var groupBlock = [
-    hdr('Define Sample Groups'),
-    '# ' + methGroup + ' = methylated group | ' + unmethGroup + ' = unmethylated / reference',
-    '# Inspect pdata to confirm the right characteristics column:',
-    'print(head(pdata[, grep("characteristics", colnames(pdata), value = TRUE)]))',
-    '',
-    '# Adjust group_col to the column containing your group labels:',
-    'group_col <- "characteristics_ch1"    # ← update if needed',
-    'pdata$SampleGroup <- ifelse(',
-    '  grepl("' + methGroup + '", pdata[[group_col]], ignore.case = TRUE),',
-    '  "' + methGroup + '", "' + unmethGroup + '"',
-    ')',
-    'pdata$SampleGroup <- factor(pdata$SampleGroup,',
-    '  levels = c("' + unmethGroup + '", "' + methGroup + '"))',
-  ];
-
-  function headerBlock(pipeline) {
-    var lines = [
-      '# ' + rep('=', 64),
-      '# DNA Methylation Analysis Pipeline',
-      '# Generated by MethylScript | Piccolo Lab, BYU',
-      '# Series       : ' + gse,
-      '# Comparison   : ' + methGroup + ' vs. ' + unmethGroup,
-      '# Array        : ' + ARRAY_DESC[arrayType],
-      '# Pipeline     : ' + pipeline,
-      '# Gene-level   : ' + regionDescMap[regions],
-      '# Aggregation  : ' + aggDescMap[aggFunc],
-      '# Date         : ' + date,
-    ];
-    if (dataFile) lines.push('# Data file    : ' + dataFile);
-    lines.push('# ' + rep('=', 64));
-    return lines;
-  }
-
-  function geoDownloadBlock() {
-    return [
-      hdr('Download Data from GEO'),
-      'gse_obj    <- getGEO("' + gse + '", GSEMatrix = TRUE, getGPL = FALSE)',
-      'pdata      <- pData(gse_obj[[1]])',
-      '',
-      'supp_files <- getGEOSuppFiles("' + gse + '")',
-      'idat_dir   <- file.path("' + gse + '", "IDAT")',
-      'untar(rownames(supp_files)[1], exdir = idat_dir)',
-      'cat("IDAT files extracted to:", idat_dir, "\\n")',
-    ];
-  }
-
-  // ── Gene-level aggregation block ─────────────────────────────
-  function geneLevelBlock(annoPkg, annoObj) {
-    // Build region filter expression
-    var regionFilter;
-    if (regions === '1') {
-      regionFilter = 'grepl("TSS200|TSS1500", anno_sub$UCSC_RefGene_Group)';
-    } else if (regions === '2') {
-      regionFilter = 'grepl("TSS200|TSS1500", anno_sub$UCSC_RefGene_Group) |\n' +
-                     '                   anno_sub$Relation_to_Island == "Island"';
-    } else {
-      regionFilter = 'nchar(as.character(anno_sub$UCSC_RefGene_Group)) > 0';
-    }
-
-    // Build aggregation expression
-    var aggCode;
-    if (aggFunc === 'median') {
-      aggCode = '    apply(mat, 2, median, na.rm = TRUE)';
-    } else if (aggFunc === 'pc1') {
-      aggCode = [
-        '    if (nrow(mat) == 1) return(mat[1, , drop = FALSE])',
-        '    pca <- prcomp(t(mat), center = TRUE, scale. = FALSE)',
-        '    pc1 <- pca$x[, 1]',
-        '    # Flip sign so high PC1 corresponds to high methylation',
-        '    if (stats::cor(pc1, colMeans(mat, na.rm = TRUE)) < 0) pc1 <- -pc1',
-        '    matrix(pc1, nrow = 1, dimnames = list(NULL, names(pc1)))',
-      ].join('\n');
-    } else {
-      aggCode = '    colMeans(mat, na.rm = TRUE)';
-    }
-
-    return [
-      hdr('Gene-Level Beta Values — ' + regionDescMap[regions]),
-      '# Aggregation method : ' + aggDescMap[aggFunc],
-      'library(' + annoPkg + ')',
-      'anno     <- getAnnotation(' + annoObj + ')',
-      'anno_sub <- anno[rownames(anno) %in% rownames(beta_final), ]',
-      '',
-      '# Filter to selected genomic regions',
-      'region_mask <- ' + regionFilter,
-      'anno_sub    <- anno_sub[region_mask, ]',
-      'cat(sprintf("Probes in selected regions: %d\\n", nrow(anno_sub)))',
-      '',
-      '# Expand probes that map to multiple genes (semicolon-delimited)',
-      'probe_gene <- do.call(rbind, lapply(seq_len(nrow(anno_sub)), function(i) {',
-      '  probe <- rownames(anno_sub)[i]',
-      '  genes <- unique(unlist(strsplit(as.character(anno_sub$UCSC_RefGene_Name[i]), ";")))',
-      '  genes <- genes[nchar(genes) > 0]',
-      '  if (length(genes) == 0) return(NULL)',
-      '  data.frame(probe = probe, gene = genes, stringsAsFactors = FALSE)',
-      '}))',
-      'probe_gene <- probe_gene[!is.na(probe_gene$probe), ]',
-      'cat(sprintf("Probes mapped to genes: %d  |  Unique genes: %d\\n",',
-      '            nrow(probe_gene), length(unique(probe_gene$gene))))',
-      '',
-      '# Aggregate probes to gene level',
-      'beta_sub      <- beta_final[probe_gene$probe, , drop = FALSE]',
-      'probe_by_gene <- split(seq_len(nrow(probe_gene)), probe_gene$gene)',
-      '',
-      'gene_betas <- do.call(rbind, lapply(names(probe_by_gene), function(gene) {',
-      '  mat <- beta_sub[probe_by_gene[[gene]], , drop = FALSE]',
-      aggCode,
-      '}))',
-      'rownames(gene_betas) <- names(probe_by_gene)',
-      'cat(sprintf("Gene-level beta matrix: %d genes × %d samples\\n",',
-      '            nrow(gene_betas), ncol(gene_betas)))',
-    ];
-  }
-
-  // ── 27K pipeline ─────────────────────────────────────────────
-  if (arrayType === '27K') {
-    var anno27Pkg = 'IlluminaHumanMethylation27kanno.ilmn12.hg19';
-    return headerBlock('minfi · bumphunter').concat([
-      '# Note        : 27K arrays are all Infinium Type I; BMIQ is unnecessary.',
-      '#               bumphunter is preferred for DMRs (sparse probe density).',
-      '# ' + rep('=', 64),
-      '',
-      hdr('Required Packages'),
-      'packages <- c(',
-      '  "GEOquery",                                    # GEO data retrieval',
-      '  "minfi",                                       # Array processing',
-      '  "' + anno27Pkg + '", # 27K annotation',
-      '  "limma",                                       # Linear modeling',
-      '  "bumphunter",                                  # DMR detection',
-      '  "sva"                                          # Surrogate variables',
-      ')',
-      '',
-      'for (pkg in packages) {',
-      '  if (!requireNamespace(pkg, quietly = TRUE))',
-      '    BiocManager::install(pkg)',
-      '  library(pkg, character.only = TRUE)',
-      '}',
-      '',
-    ], geoDownloadBlock(), [''], groupBlock, [
-      '',
-      hdr('Load Raw Data'),
-      'RGset <- read.metharray.exp(idat_dir, force = TRUE)',
-      'cat(sprintf("Loaded %d samples, %d probes\\n", ncol(RGset), nrow(RGset)))',
-      '',
-      hdr('Quality Control'),
-      'MSet_raw <- preprocessRaw(RGset)',
-      'qc       <- getQC(MSet_raw)',
-      'dir.create("QC", showWarnings = FALSE)',
-      'pdf("QC/qc_plots.pdf")',
-      'plotQC(qc)',
-      'densityPlot(getBeta(MSet_raw), sampGroups = pdata$SampleGroup,',
-      '            main = "Beta-value density — pre-normalization")',
-      'dev.off()',
-      '',
-      '# Flag low-quality samples (median signal < 10.5)',
-      'low_quality <- rownames(qc)[qc$mMed < 10.5 | qc$uMed < 10.5]',
-      'if (length(low_quality) > 0)',
-      '  warning("Low-quality samples: ", paste(low_quality, collapse = ", "))',
-      '',
-      '# Remove probes failing detection p-value in > 5% of samples',
-      'det_p       <- detectionP(RGset)',
-      'keep_probes <- rowMeans(det_p > 0.01) <= 0.05',
-      'cat(sprintf("Probes retained after QC: %d / %d\\n", sum(keep_probes), length(keep_probes)))',
-      '',
-      hdr('Normalize (Quantile — appropriate for all-Type-I 27K)'),
-      'GRset <- preprocessQuantile(RGset)',
-      'GRset <- mapToGenome(GRset)',
-      'GRset <- GRset[keep_probes, ]',
-      '',
-      hdr('Filter Probes'),
-      'GRset_filt <- dropLociWithSnps(GRset, snpAnno = NULL, maf = 0.01, drop = TRUE)',
-      'autosome   <- !as.character(seqnames(GRset_filt)) %in% c("chrX", "chrY")',
-      'GRset_filt <- GRset_filt[autosome, ]',
-      'cat(sprintf("Probes after filtering: %d\\n", nrow(GRset_filt)))',
-      '',
-      'beta_final <- getBeta(GRset_filt)',
-      'M_vals     <- getM(GRset_filt)',
-      '',
-    ], geneLevelBlock(anno27Pkg, anno27Pkg), [
-      '',
-      hdr('Surrogate Variable Analysis'),
-      'pheno  <- pdata$SampleGroup',
-      'mod    <- model.matrix(~ pheno)',
-      'mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))',
-      'svaobj <- sva(M_vals, mod, mod0)',
-      'svs    <- svaobj$sv',
-      'cat(sprintf("SVA: %d surrogate variable(s) identified.\\n", ncol(svs)))',
-      '',
-      hdr('Differentially Methylated Positions (' + methGroup + ' vs. ' + unmethGroup + ')'),
-      'design <- model.matrix(~ 0 + pheno + svs)',
-      'colnames(design)[1:2] <- c("' + g1 + '", "' + g2 + '")',
-      '',
-      'fit  <- lmFit(M_vals, design)',
-      'cont <- makeContrasts(' + g1 + ' - ' + g2 + ', levels = design)',
-      'fit2 <- contrasts.fit(fit, cont)',
-      'fit2 <- eBayes(fit2)',
-      '',
-      'dmps     <- topTable(fit2, coef = 1, number = Inf, adjust.method = "BH")',
-      'dmps_sig <- subset(dmps, adj.P.Val < 0.05 & abs(logFC) > 0.1)',
-      'cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))',
-      '',
-      hdr('Differentially Methylated Regions (bumphunter)'),
-      'designMatrix <- model.matrix(~ pheno + svs)',
-      'set.seed(42)',
-      'dmrs <- bumphunter(',
-      '  object = GRset_filt,',
-      '  design = designMatrix,',
-      '  coef   = 2,',
-      '  B      = 1000,    # permutation replicates for empirical p-values',
-      '  type   = "Beta",',
-      '  cutoff = 0.1,     # minimum mean Beta difference',
-      '  smooth = TRUE',
-      ')',
-      'dmrs_sig <- subset(dmrs$table, p.valueArea < 0.05)',
-      'cat(sprintf("Significant DMRs: %d\\n", nrow(dmrs_sig)))',
-      '',
-      hdr('Save Results'),
-      'dir.create("results", showWarnings = FALSE)',
-      'write.csv(gene_betas, "results/gene_level_betas.csv",      row.names = TRUE)',
-      'write.csv(dmps,       "results/all_DMPs.csv",              row.names = TRUE)',
-      'write.csv(dmps_sig,   "results/significant_DMPs.csv",      row.names = TRUE)',
-      'write.csv(dmrs_sig,   "results/significant_DMRs.csv",      row.names = FALSE)',
-      'save(GRset_filt, beta_final, gene_betas, dmps, dmrs,',
-      '     file = "results/methylation_workspace.RData")',
-      '',
-      'message("Pipeline complete. Results written to ./results/")',
-    ]).join('\n');
-  }
-
-  // ── 450K / EPIC pipeline ──────────────────────────────────────
-  var champArray = arrayType === '450K' ? '450K' : 'EPIC';
-  var annoPkg    = arrayType === '450K'
-    ? 'IlluminaHumanMethylation450kanno.ilmn12.hg19'
-    : 'IlluminaHumanMethylationEPICanno.ilm10b4.hg19';
-
-  return headerBlock('ChAMP · DMRcate').concat([
-    '# ' + rep('=', 64),
-    '',
-    hdr('Required Packages'),
-    'packages <- c(',
-    '  "GEOquery",             # GEO data retrieval',
-    '  "ChAMP",                # Core methylation pipeline',
-    '  "minfi",                # Low-level IDAT processing',
-    '  "' + annoPkg + '",',
-    '  "limma",                # Linear modeling for DMPs',
-    '  "DMRcate",              # Differentially methylated regions',
-    '  "sva"                   # Surrogate variable analysis',
-    ')',
-    '',
-    'for (pkg in packages) {',
-    '  if (!requireNamespace(pkg, quietly = TRUE))',
-    '    BiocManager::install(pkg)',
-    '  library(pkg, character.only = TRUE)',
-    '}',
-    '',
-  ], geoDownloadBlock(), [''], groupBlock, [
-    '',
-    hdr('Load & Filter (ChAMP)'),
-    'myLoad <- champ.load(',
-    '  directory      = idat_dir,',
-    '  arraytype      = "' + champArray + '",',
-    '  filterXY       = TRUE,    # Remove sex-chromosome probes',
-    '  filterSNPs     = TRUE,    # Remove SNP-overlapping probes',
-    '  filterMultiHit = TRUE,    # Remove cross-reactive probes',
-    '  filterNoCG     = TRUE,    # Retain only CpG probes',
-    '  detPcut        = 0.01,    # Detection p-value threshold',
-    '  filterBeads    = TRUE,',
-    '  beadCutoff     = 0.05,',
-    '  pd             = pdata',
-    ')',
-    '',
-    hdr('Quality Control'),
-    'champ.QC(',
-    '  beta       = myLoad$beta,',
-    '  pheno      = myLoad$pd$SampleGroup,',
-    '  resultsDir = "./ChAMP_QC"',
-    ')',
-    '',
-    hdr('Normalization (BMIQ — corrects Type I/II probe bias)'),
-    'myNorm <- champ.norm(',
-    '  beta       = myLoad$beta,',
-    '  arraytype  = "' + champArray + '",',
-    '  method     = "BMIQ",',
-    '  plotBMIQ   = FALSE,',
-    '  resultsDir = "./ChAMP_Norm"',
-    ')',
-    '',
-    hdr('Finalize Beta Matrix'),
-    'beta_final <- myNorm',
-    '',
-  ], geneLevelBlock(annoPkg, annoPkg), [
-    '',
-    hdr('Surrogate Variable Analysis'),
-    'M_vals <- logit2(beta_final)',
-    'pheno  <- factor(pdata$SampleGroup)',
-    'mod    <- model.matrix(~ pheno)',
-    'mod0   <- model.matrix(~ 1, data = as.data.frame(pheno))',
-    'svaobj <- sva(M_vals, mod, mod0)',
-    'svs    <- svaobj$sv',
-    'cat(sprintf("SVA: %d surrogate variable(s) identified.\\n", ncol(svs)))',
-    '',
-    hdr('Differentially Methylated Positions (' + methGroup + ' vs. ' + unmethGroup + ')'),
-    'design <- model.matrix(~ 0 + pheno + svs)',
-    'colnames(design)[1:2] <- c("' + g1 + '", "' + g2 + '")',
-    '',
-    'fit  <- lmFit(M_vals, design)',
-    'cont <- makeContrasts(' + g1 + ' - ' + g2 + ', levels = design)',
-    'fit2 <- contrasts.fit(fit, cont)',
-    'fit2 <- eBayes(fit2)',
-    '',
-    'dmps     <- topTable(fit2, coef = 1, number = Inf, adjust.method = "BH")',
-    'dmps_sig <- subset(dmps, adj.P.Val < 0.05 & abs(logFC) > 0.1)',
-    'cat(sprintf("Significant DMPs: %d\\n", nrow(dmps_sig)))',
-    '',
-    hdr('Differentially Methylated Regions (DMRcate)'),
-    'annot <- cpg.annotate(',
-    '  datatype      = "array",',
-    '  object        = M_vals,',
-    '  what          = "M",',
-    '  arraytype     = "' + champArray + '",',
-    '  analysis.type = "differential",',
-    '  design        = design,',
-    '  coef          = 2',
-    ')',
-    'dmrs       <- dmrcate(annot, lambda = 1000, C = 2)',
-    'dmr_ranges <- extractRanges(dmrs, genome = "hg38")',
-    'cat(sprintf("DMRs detected: %d\\n", length(dmr_ranges)))',
-    '',
-    hdr('Save Results'),
-    'dir.create("results", showWarnings = FALSE)',
-    'write.csv(gene_betas,                "results/gene_level_betas.csv",   row.names = TRUE)',
-    'write.csv(dmps,                      "results/all_DMPs.csv",            row.names = TRUE)',
-    'write.csv(dmps_sig,                  "results/significant_DMPs.csv",    row.names = TRUE)',
-    'write.csv(as.data.frame(dmr_ranges), "results/DMRs.csv",                row.names = FALSE)',
-    'save(beta_final, gene_betas, dmps, dmr_ranges,',
-    '     file = "results/methylation_workspace.RData")',
-    '',
-    'message("Pipeline complete. Results written to ./results/")',
-  ]).join('\n');
-}
-
-// ── Copy / Save ───────────────────────────────────────────────
-btnCopy.addEventListener('click', function() {
-  navigator.clipboard.writeText(rawScript).then(function() {
-    btnCopy.classList.add('copied');
-    var orig = btnCopy.innerHTML;
-    btnCopy.innerHTML = orig.replace('Copy', 'Copied!');
-    setTimeout(function() { btnCopy.classList.remove('copied'); btnCopy.innerHTML = orig; }, 2000);
-  }).catch(function() {
-    var range = document.createRange();
-    range.selectNodeContents(rCodeOutput);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
+function clearPanel() { choicePanel.innerHTML = ''; }
+function showBtns(defs) {
+  clearPanel();
+  var row = document.createElement('div');
+  row.className = 'btn-row';
+  defs.forEach(function(d) {
+    var b = document.createElement('button');
+    b.className = 'c-btn' + (d.primary?' primary':'');
+    b.textContent = d.label;
+    if (d.disabled) { b.disabled=true; if(d.tip) b.title=d.tip; }
+    else b.addEventListener('click', d.fn);
+    row.appendChild(b);
   });
-});
+  choicePanel.appendChild(row);
+  scrollBot();
+}
 
-btnSave.addEventListener('click', function() {
-  var blob = new Blob([rawScript], { type: 'text/plain' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href = url; a.download = 'methylation_pipeline_' + gseId + '.R';
+// ── NCBI eUtils ──
+function eSummary(uid) {
+  return fetch(EUTILS+'esummary.fcgi?db=gds&id='+uid+'&retmode=json'+NCBI_P)
+    .then(function(r){ if(!r.ok) throw new Error('NCBI HTTP '+r.status); return r.json(); });
+}
+function eSearch(term) {
+  return fetch(EUTILS+'esearch.fcgi?db=gds&term='+encodeURIComponent(term)+'&retmax=20&retmode=json'+NCBI_P)
+    .then(function(r){ if(!r.ok) throw new Error('NCBI HTTP '+r.status); return r.json(); });
+}
+function normalizeGpl(raw) {
+  if (!raw) return '';
+  // Handle array (multi-platform studies)
+  if (Array.isArray(raw)) raw = raw[0] || '';
+  var s = raw.toString().trim();
+  // Take first token if multiple platforms (space, semicolon, or comma-separated)
+  var first = s.split(/[\s;,]+/).filter(Boolean)[0] || '';
+  if (!first) return '';
+  // Some responses return just the numeric part (e.g. "13534" instead of "GPL13534")
+  if (/^\d+$/.test(first)) return 'GPL' + first;
+  return first.toUpperCase();
+}
+
+function parseSummary(data, gse) {
+  // Check for API-level error field
+  if (data.error) throw new Error('NCBI error: ' + data.error);
+
+  var res=data.result||{}, keys=Object.keys(res).filter(function(k){return k!=='uids';});
+  if(!keys.length) throw new Error(gse+' not found in GEO.');
+  var e=res[keys[0]];
+
+  // Debug: log what NCBI actually returned so issues are visible in the console
+  console.log('[MS] NCBI entry — accession:', e.accession, '| title:', (e.title||'').slice(0,60),
+              '| entrytype:', e.entrytype, '| gpl:', e.gpl,
+              '| n_samples:', e.n_samples, '| samples:', Array.isArray(e.samples)?e.samples.length:'—');
+
+  // If the entry has no title and no accession it's an empty shell (rate-limit / bad UID)
+  if (!e.title && !e.accession) {
+    throw new Error('NCBI returned an empty entry for ' + gse + '. This is usually a rate-limit — wait a moment and try again.');
+  }
+
+  if(e.entrytype&&e.entrytype!=='GSE') throw new Error('UID resolved to '+e.entrytype+', not a GSE series.');
+
+  // GPL — NCBI may return just a number ("13534") or with prefix ("GPL13534")
+  var rawGpl = e.gpl || e.GPL || e.platform || e.platforms || '';
+  var gpl = normalizeGpl(rawGpl);
+
+  // suppfile is a comma/semicolon/tab type list like "CSV, IDAT" — split on all
+  var suppRaw = e.suppfile || e.Suppfile || e.suppfiles || '';
+  var suppFiles = suppRaw
+    ? suppRaw.split(/[;,\t]\s*/).map(function(s){return s.trim();}).filter(Boolean)
+    : [];
+
+  // The esummary response includes a full samples array with accession + title
+  var ncbiSamples = Array.isArray(e.samples)
+    ? e.samples.map(function(s){ return {gsm: s.accession||'', title: s.title||''}; })
+    : [];
+  var nSamples = ncbiSamples.length || parseInt(e.n_samples) || 0;
+
+  // PubMed IDs
+  var pubmed = Array.isArray(e.pubmedids) ? e.pubmedids.filter(Boolean) : [];
+
+  return {
+    gpl:gpl, gplName:GPL_NAME[gpl]||(gpl?gpl:(gpl===''?'Unknown platform':gpl)),
+    arrType:GPL_TYPE[gpl]||null,
+    title:e.title||e.accession||gse, summary:e.summary||'',
+    organism:e.taxon||'',
+    nSamples:nSamples, ncbiSamples:ncbiSamples,
+    suppFiles:suppFiles, pubmed:pubmed,
+  };
+}
+function delay(ms) { return new Promise(function(r){ setTimeout(r,ms); }); }
+function fetchNCBIMeta(gse) {
+  var uid='200'+gse.replace(/^GSE/i,'');
+
+  function tryDirect() {
+    return eSummary(uid).then(function(d){ return parseSummary(d,gse); });
+  }
+  function trySearch() {
+    return eSearch(gse+'[ACCN]').then(function(d){
+      var ids=((d.esearchresult||{}).idlist||[]);
+      if(!ids.length) throw new Error(gse+' not found in GEO. Check the accession number.');
+      // Prefer GSE UIDs (200xxxxx); fall back to first result
+      var id=ids.find(function(x){return /^200/.test(x);})||ids[0];
+      console.log('[MS] eSearch chose UID:', id);
+      return eSummary(id);
+    }).then(function(d){ return parseSummary(d,gse); });
+  }
+
+  return tryDirect().catch(function(firstErr) {
+    console.warn('[MS] tryDirect failed:', firstErr.message, '— trying eSearch after 600 ms');
+    return delay(600).then(trySearch).catch(function(searchErr) {
+      console.warn('[MS] trySearch failed:', searchErr.message, '— one more direct retry after 1.2 s');
+      return delay(1200).then(tryDirect).catch(function() { throw firstErr; });
+    });
+  });
+}
+
+// ── GEO FTP ──
+function geoBase(gse) {
+  var num=gse.replace(/^GSE/i,'');
+  var pfx=num.length<=3?'GSEnnn':'GSE'+num.slice(0,num.length-3)+'nnn';
+  return GEO_FTP+pfx+'/'+gse;
+}
+function matrixUrl(gse)         { return geoBase(gse)+'/matrix/'+gse+'_series_matrix.txt.gz'; }
+function suppUrl(gse, filename) { return geoBase(gse)+'/suppl/'+encodeURIComponent(filename); }
+
+// Fetch the FTP /suppl/ directory listing and return an array of filenames
+async function fetchSuppDir(gse) {
+  var url = geoBase(gse)+'/suppl/';
+  try {
+    var resp = await fetch(url);
+    if (!resp.ok) return [];
+    var html = await resp.text();
+    // Apache/nginx directory index: extract href values
+    var re = /href="([^"?#/][^"?#]*)"/gi, m, names=[];
+    while ((m = re.exec(html)) !== null) {
+      var name = m[1];
+      if (/\.(txt|csv|tsv|gz|zip)(\.gz)?$/i.test(name)) names.push(name);
+    }
+    console.log('[MS] FTP suppl dir found:', names);
+    return names;
+  } catch(e) {
+    console.warn('[MS] fetchSuppDir failed:', e.message);
+    return [];
+  }
+}
+
+async function fetchLines(url, maxLines) {
+  maxLines=maxLines||100;
+  var isGz=/\.gz$/i.test(url), resp=null;
+  try {
+    resp=await fetch(url,{headers:{'Range':'bytes=0-262143'}});
+    if(!resp.ok&&resp.status!==206) resp=null;
+  } catch(_){resp=null;}
+  if(!resp){ resp=await fetch(url); if(!resp.ok) throw new Error('HTTP '+resp.status+' for '+url); }
+  var stream=resp.body;
+  if(isGz){
+    if(typeof DecompressionStream==='undefined') throw new Error('DecompressionStream not supported. Try Chrome or Edge.');
+    stream=stream.pipeThrough(new DecompressionStream('gzip'));
+  }
+  var reader=stream.getReader(), dec=new TextDecoder(), buf='', lines=[];
+  try {
+    while(lines.length<maxLines){
+      var chunk=await reader.read(); if(chunk.done) break;
+      buf+=dec.decode(chunk.value,{stream:true});
+      var parts=buf.split('\n'); buf=parts.pop(); lines.push.apply(lines,parts);
+    }
+  } catch(_){}
+  try{reader.cancel();}catch(_){}
+  return lines.slice(0,maxLines);
+}
+
+// ── Series Matrix parser ──
+function parseMatrix(lines) {
+  var series={}, samples={}, order=[];
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i];
+    if(!line||line==='!series_matrix_table_begin') break;
+    if(line.startsWith('!Series_')){
+      var rest=line.slice(8), ti=rest.indexOf('\t');
+      if(ti>=0){ var k=rest.slice(0,ti).trim(); series[k]=rest.slice(ti+1).replace(/^"+|"+$/g,'').trim(); }
+    } else if(line.startsWith('!Sample_')){
+      var rest2=line.slice(8), ti2=rest2.indexOf('\t');
+      if(ti2>=0){
+        var k2=rest2.slice(0,ti2).trim();
+        var vals=rest2.slice(ti2+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
+        if(k2==='geo_accession') order=vals;
+        samples[k2]=vals;
+      }
+    }
+  }
+  var sampleList=order.map(function(gsm,idx){
+    var obj={gsm:gsm};
+    Object.keys(samples).forEach(function(k){ if(samples[k][idx]!==undefined) obj[k]=samples[k][idx]; });
+    return obj;
+  });
+  return {series:series, samples:sampleList, nSamples:sampleList.length,
+    title:series['title']||'', gpl:series['platform_id']||'',
+    summary:series['summary']||'', design:series['overall_design']||''};
+}
+
+// ── Signal format detector ──
+function detectSigFmt(lines) {
+  var header='', second='', found=false;
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i].trim(); if(!l||l[0]==='#') continue;
+    if(!found){header=l;found=true;}else{second=l;break;}
+  }
+  var cols=header.split('\t'), cols2=second?second.split('\t'):[];
+  var sigWords=['methylated','unmethylated','detection','pval','p.value','p-value','signal'];
+  if(cols2.some(function(c){return sigWords.some(function(w){return c.toLowerCase().indexOf(w)>=0;});}))
+    return {format:'two_row',header:cols,sigRow:cols2};
+  if(cols.some(function(c){return /GSM\d+\.(methylated|unmethylated|detection)/i.test(c);}))
+    return {format:'combined',header:cols};
+  if(cols.some(function(c){return /signal[_. ]?[ab]\b/i.test(c);}))
+    return {format:'signal_ab',header:cols};
+  var dataLine='';
+  for(var j=1;j<lines.length;j++){var ll=lines[j].trim();if(!ll||ll[0]==='#')continue;dataLine=ll;break;}
+  if(dataLine){
+    var dc=dataLine.split('\t').slice(1);
+    if(dc.length>0&&dc.every(function(v){var n=parseFloat(v);return !isNaN(n)&&n>=0&&n<=1;}))
+      return {format:'precomputed_beta',header:cols};
+  }
+  return {format:'unknown',header:cols};
+}
+
+// ── File detection ──
+function hasIdat(files) {
+  return files.some(function(f){return /\.idat(\.gz)?$/i.test(f)||/\bidat\b/i.test(f);});
+}
+function findSigFile(files) {
+  var txt=files.filter(function(f){return /\.(txt|csv|tsv)(\.gz)?$/i.test(f)&&!/_series_matrix/i.test(f);});
+  var pref=txt.filter(function(f){return /(signal|beta|data|matrix|methylat)/i.test(f);});
+  return (pref.length?pref:txt)[0]||null;
+}
+function runTimeEst(n,type,idat) {
+  if(!n) return '10–30 minutes';
+  var mpp=idat?(type==='27K'?.5:type==='450K'?1.5:2):(type==='27K'?.1:type==='450K'?.3:.5);
+  var t=Math.round(n*mpp);
+  if(t<3)return '1–3 minutes';if(t<10)return '3–10 minutes';
+  if(t<25)return '10–25 minutes';if(t<60)return '25–60 minutes';
+  return '60+ minutes';
+}
+
+// ── R Script — IDAT path ──
+function buildIdatScript(gse,arr,n) {
+  var normFn=arr==='27K'?'preprocessQuantile':'preprocessFunnorm';
+  // Each array type needs its own Bioconductor manifest + annotation package
+  var manifestPkg = arr==='27K'  ? 'IlluminaHumanMethylation27kmanifest'  :
+                    arr==='450K' ? 'IlluminaHumanMethylation450kmanifest' :
+                    arr==='EPICv2'?'IlluminaHumanMethylationEPICv2manifest':
+                                   'IlluminaHumanMethylationEPICmanifest';
+  var annotPkg    = arr==='27K'  ? 'IlluminaHumanMethylation27kanno.ilmn12.hg19'    :
+                    arr==='450K' ? 'IlluminaHumanMethylation450kanno.ilmn12.hg19'   :
+                    arr==='EPICv2'?'IlluminaHumanMethylationEPICv2anno.20a1.hg38'   :
+                                   'IlluminaHumanMethylationEPICanno.ilm10b4.hg19';
+  var L=[],p=function(s){L.push(s);};
+  p('# ═══════════════════════════════════════════════════════════════════');
+  p('# MethylScript — DNA Methylation Normalization Pipeline');
+  p('# Series:   '+gse);p('# Array:    '+arr);
+  p('# Method:   IDAT re-normalization via minfi');
+  p('# Samples:  '+(n||'unknown'));
+  p('# Outputs:  '+gse+'_series_metadata.tsv');
+  p('#           '+gse+'_sample_metadata.tsv');
+  p('#           '+gse+'_methylation_values.tsv');
+  p('# ═══════════════════════════════════════════════════════════════════');
+  p('');
+  p('# ── 1. Packages ──────────────────────────────────────────────────────────');
+  p('if (!requireNamespace("BiocManager", quietly = TRUE))');
+  p('  install.packages("BiocManager")');
+  p('BiocManager::install(');
+  p('  c("minfi", "GEOquery",');
+  p('    "'+manifestPkg+'",   # array manifest (required by minfi)');
+  p('    "'+annotPkg+'"  # probe annotations');
+  p('  ),');
+  p('  ask = FALSE, update = FALSE');
+  p(')');
+  p('if (!requireNamespace("R.utils", quietly = TRUE)) install.packages("R.utils")');
+  p('');p('library(minfi)');p('library(GEOquery)');p('library(R.utils)');
+  p('');
+  p('# ── 2. Configuration ───────────────────────────────────────────────────');
+  p('gse_id          <- "'+gse+'"');
+  p('output_dir      <- getwd()        # change if needed');
+  p('detect_p_thresh <- 0.01           # detection p-value cutoff');
+  p('probe_fail_max  <- 0.05           # remove probes failing in >5% of samples');
+  p('');
+  p('# ── 3. Download supplementary IDAT files ──────────────────────────────');
+  p('message("Downloading supplementary files from GEO (may take several minutes)...")');
+  p('getGEOSuppFiles(gse_id, makeDirectory = TRUE)');
+  p('');
+  p('# Untar archives');
+  p('tar_files <- list.files(gse_id, pattern = "\\\\.tar$", full.names = TRUE)');
+  p('for (f in tar_files) { message("Extracting: ", basename(f)); untar(f, exdir = gse_id) }');
+  p('');
+  p('# Gunzip compressed IDAT files');
+  p('gz_idats <- list.files(gse_id, pattern = "\\\\.idat\\\\.gz$",');
+  p('                        full.names = TRUE, recursive = TRUE)');
+  p('for (f in gz_idats) R.utils::gunzip(f, overwrite = TRUE)');
+  p('');
+  p('# ── 4. Read IDAT files ─────────────────────────────────────────────────');
+  p('idat_files <- list.files(gse_id, pattern = "\\\\.idat$", recursive = TRUE, full.names = TRUE)');
+  p('if (length(idat_files) == 0) stop("No .idat files found in ", gse_id)');
+  p('idat_dirs  <- table(dirname(idat_files))');
+  p('idat_dir   <- names(idat_dirs)[which.max(idat_dirs)]');
+  p('message("Reading IDATs from: ", idat_dir)');
+  p('rgSet <- read.metharray.exp(base = idat_dir, force = TRUE)');
+  p('message("Loaded ", ncol(rgSet), " samples, ", nrow(rgSet), " loci")');
+  p('');
+  p('# ── 5. Detection p-values & QC ──────────────────────────────────────────');
+  p('message("Computing detection p-values...")');
+  p('detP <- detectionP(rgSet)');
+  p('sample_fail <- colMeans(detP > detect_p_thresh)');
+  p('if (any(sample_fail > 0.25)) {');
+  p('  bad <- names(sample_fail)[sample_fail > 0.25]');
+  p('  warning(length(bad), " sample(s) with >25% failed probes: ", paste(bad, collapse=", "))');
+  p('}');
+  p('');
+  p('# ── 6. Normalize ───────────────────────────────────────────────────────');
+  p('message("Normalizing with '+normFn+'...")');
+  p('grSet <- '+normFn+'(rgSet)');
+  p('');
+  p('# ── 7. Filter low-quality probes ────────────────────────────────────────');
+  p('dp <- detP[match(featureNames(grSet), rownames(detP)),');
+  p('           match(sampleNames(grSet), colnames(detP)), drop = FALSE]');
+  p('fail_frac <- rowMeans(dp > detect_p_thresh, na.rm = TRUE)');
+  p('keep      <- fail_frac < probe_fail_max');
+  p('message("Keeping ", sum(keep), " / ", length(keep), " probes after p-value filter")');
+  p('grSet <- grSet[keep, ]');
+  p('');
+  p('# ── 8. Extract beta values ─────────────────────────────────────────────');
+  p('message("Extracting beta values...")');
+  p('beta_mat <- getBeta(grSet)');
+  p('');
+  p('# ── 9. Series & sample metadata ────────────────────────────────────────');
+  p('message("Fetching metadata from GEO...")');
+  p('gse_obj <- getGEO(gse_id, GSEMatrix = TRUE)[[1]]');
+  p('ei      <- experimentData(gse_obj)');
+  p('pd      <- pData(gse_obj)');
+  p('');
+  p('# Rename beta_mat columns from IDAT basename → GSM accession.');
+  p('# minfi names columns by IDAT file basename (e.g. "5958091020_R06C02");');
+  p('# GEOquery indexes pData by GSM accession. We build the map from the');
+  p('# supplementary_file_* columns in pData, which hold the IDAT file URLs.');
+  p('supp_cols <- grep("^supplementary_file", colnames(pd), value=TRUE, ignore.case=TRUE)');
+  p('if (length(supp_cols) > 0) {');
+  p('  all_urls   <- unlist(lapply(supp_cols, function(col) setNames(pd[[col]], rownames(pd))))');
+  p('  idat_base  <- gsub("_(Red|Grn)\\\\.idat(\\\\.gz)?$", "",');
+  p('                     basename(all_urls), ignore.case=TRUE)');
+  p('  idat_base  <- gsub("\\\\.idat(\\\\.gz)?$", "", idat_base, ignore.case=TRUE)');
+  p('  # named vector: name = IDAT basename, value = GSM accession');
+  p('  base2gsm   <- setNames(names(all_urls), idat_base)');
+  p('  base2gsm   <- base2gsm[!duplicated(names(base2gsm))]');
+  p('  m          <- match(colnames(beta_mat), names(base2gsm))');
+  p('  renamed    <- !is.na(m)');
+  p('  if (any(renamed)) {');
+  p('    colnames(beta_mat)[renamed] <- base2gsm[m[renamed]]');
+  p('    message("Renamed ", sum(renamed), " column(s): IDAT basename → GSM accession")');
+  p('  }');
+  p('}');
+  p('');
+  p('# Helper: safely pull a field from ei@other (returns NA if missing)');
+  p('geo_other <- function(key) {');
+  p('  v <- ei@other[[key]]');
+  p('  if (is.null(v) || length(v) == 0) NA_character_ else as.character(v[[1]])');
+  p('}');
+  p('');
+  p('series_meta <- data.frame(');
+  p('  Field = c("geo_accession","title","organism","platform",');
+  p('            "submission_date","last_update_date","pubmed_id","summary","overall_design"),');
+  p('  Value = c(');
+  p('    annotation(gse_obj),');
+  p('    if (nchar(ei@title) > 0) ei@title else geo_other("title"),');
+  p('    paste(unique(pd$organism_ch1), collapse="; "),');
+  p('    paste(unique(pd$platform_id),  collapse="; "),');
+  p('    geo_other("submission_date"),');
+  p('    geo_other("last_update_date"),');
+  p('    paste(pubMedIds(gse_obj), collapse="; "),');
+  p('    abstract(gse_obj),');
+  p('    geo_other("overall_design")');
+  p('  ), stringsAsFactors = FALSE)');
+  p('');
+  p('sample_meta <- pd');
+  p('common      <- intersect(rownames(sample_meta), colnames(beta_mat))');
+  p('if (length(common) == 0) {');
+  p('  # Last-resort: extract any GSM accession embedded in column names');
+  p('  gsm_in_cols <- regmatches(colnames(beta_mat),');
+  p('                            regexpr("GSM[0-9]+", colnames(beta_mat)))');
+  p('  if (length(gsm_in_cols) == ncol(beta_mat))');
+  p('    colnames(beta_mat) <- gsm_in_cols');
+  p('  common <- intersect(rownames(sample_meta), colnames(beta_mat))');
+  p('}');
+  p('if (length(common) == 0) {');
+  p('  warning("Could not match beta_mat columns to GSM accessions. ",');
+  p('          "beta_mat columns: ", paste(head(colnames(beta_mat),3), collapse=", "),');
+  p('          " | pData rownames: ", paste(head(rownames(sample_meta),3), collapse=", "))');
+  p('} else {');
+  p('  sample_meta <- sample_meta[common, , drop = FALSE]');
+  p('  beta_mat    <- beta_mat[, common,  drop = FALSE]');
+  p('}');
+  p('');
+  p('# ── 10. Write output files ─────────────────────────────────────────────');
+  p('message("Writing output files to: ", output_dir)');
+  p('');
+  p('write.table(series_meta, sep="\\t", row.names=FALSE, quote=FALSE,');
+  p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
+  p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
+  p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
+  p('# Sort probes alphabetically, then prepend ID_REF header column');
+  p('beta_sorted <- beta_mat[order(rownames(beta_mat)), , drop=FALSE]');
+  p('beta_out    <- data.frame(ID_REF = rownames(beta_sorted),');
+  p('                          beta_sorted,');
+  p('                          check.names=FALSE, stringsAsFactors=FALSE)');
+  p('write.table(beta_out, sep="\\t", row.names=FALSE, quote=FALSE,');
+  p('            file=file.path(output_dir, paste0(gse_id,"_methylation_values.tsv")))');
+  p('');
+  p('message("Done!")');
+  p('message("  ",gse_id,"_series_metadata.tsv")');
+  p('message("  ",gse_id,"_sample_metadata.tsv")');
+  p('message("  ",gse_id,"_methylation_values.tsv  (",');
+  p('        nrow(beta_out)," probes x ",(ncol(beta_out)-1)," samples)")');
+  return L.join('\n');
+}
+
+// ── R Script — Signal table path ──
+function buildSigScript(gse,arr,fmt,sigFile,n) {
+  var L=[],p=function(s){L.push(s);};
+  p('# ═══════════════════════════════════════════════════════════════════');
+  p('# MethylScript — DNA Methylation Normalization Pipeline');
+  p('# Series:   '+gse);p('# Array:    '+arr);
+  p('# Method:   Beta values from signal table');
+  p('#           β = Methylated / (Methylated + Unmethylated + 100)');
+  p('# Format:   '+(fmt||'auto-detected'));
+  p('# Samples:  '+(n||'unknown'));
+  p('# Outputs:  '+gse+'_series_metadata.tsv');
+  p('#           '+gse+'_sample_metadata.tsv');
+  p('#           '+gse+'_methylation_values.tsv');
+  p('# ═══════════════════════════════════════════════════════════════════');
+  p('');
+  p('# ── 1. Packages ──────────────────────────────────────────────────────────');
+  p('if (!requireNamespace("BiocManager", quietly = TRUE))');
+  p('  install.packages("BiocManager")');
+  p('BiocManager::install("GEOquery", ask = FALSE, update = FALSE)');
+  p('if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")');
+  p('');p('library(GEOquery)');p('library(data.table)');
+  p('');
+  p('# ── 2. Configuration ───────────────────────────────────────────────────');
+  p('gse_id          <- "'+gse+'"');
+  p('signal_file     <- "'+(sigFile||'signal_table.txt.gz')+'"');
+  p('output_dir      <- getwd()');
+  p('detect_p_thresh <- 0.01   # p-value threshold — probes above this are set to NA');
+  p('probe_fail_max  <- 0.05   # remove probes with NA in >5% of samples');
+  p('offset          <- 100    # Illumina beta offset: β = Meth / (Meth + Unmeth + offset)');
+  p('');
+  p('# ── 3. Download supplementary files ─────────────────────────────────────');
+  p('message("Downloading supplementary files from GEO...")');
+  p('getGEOSuppFiles(gse_id, makeDirectory = TRUE)');
+  p('local_sig <- file.path(gse_id, signal_file)');
+  p('if (!file.exists(local_sig)) {');
+  p('  avail <- list.files(gse_id)');
+  p('  message("Files in ", gse_id, ": ", paste(avail, collapse=", "))');
+  p('  stop("Signal file not found. Update the signal_file variable above.")');
+  p('}');
+  p('message("Reading: ", signal_file)');
+  p('');
+
+  if(fmt==='two_row'){
+    p('# ── 4. Read two-row header table ─────────────────────────────────────────');
+    p('header1 <- scan(local_sig, what="", nlines=1, sep="\\t", quiet=TRUE)');
+    p('header2 <- scan(local_sig, what="", nlines=1, sep="\\t", skip=1, quiet=TRUE)');
+    p('');
+    p('meth_idx   <- which(grepl("methylated signal",   header2, ignore.case=TRUE) &');
+    p('                    !grepl("unmethylated",        header2, ignore.case=TRUE))');
+    p('unmeth_idx <- which(grepl("unmethylated signal", header2, ignore.case=TRUE))');
+    p('detP_idx   <- which(grepl("detection|pval|p\\.value|p-value", header2, ignore.case=TRUE))');
+    p('');
+    p('raw       <- fread(local_sig, skip=2, header=FALSE)');
+    p('probe_ids <- as.character(raw[[1]])');
+    p('gsm_ids   <- header1[meth_idx]');
+    p('');
+    p('meth_mat   <- as.matrix(raw[, meth_idx,   with=FALSE])');
+    p('unmeth_mat <- as.matrix(raw[, unmeth_idx, with=FALSE])');
+    p('detP_mat   <- if (length(detP_idx)) as.matrix(raw[, detP_idx, with=FALSE]) else NULL');
+    p('colnames(meth_mat) <- colnames(unmeth_mat) <- gsm_ids');
+    p('if (!is.null(detP_mat)) colnames(detP_mat) <- gsm_ids');
+    p('rownames(meth_mat) <- rownames(unmeth_mat) <- probe_ids');
+  } else if(fmt==='combined'){
+    p('# ── 4. Read combined-column table ────────────────────────────────────────');
+    p('dt        <- fread(local_sig)');
+    p('probe_ids <- as.character(dt[[1]])');
+    p('cn        <- colnames(dt)');
+    p('');
+    p('meth_idx   <- which(grepl("methylated signal",   cn, ignore.case=TRUE) &');
+    p('                    !grepl("unmethylated",        cn, ignore.case=TRUE))');
+    p('unmeth_idx <- which(grepl("unmethylated signal", cn, ignore.case=TRUE))');
+    p('detP_idx   <- which(grepl("detection|pval|p\\.value", cn, ignore.case=TRUE))');
+    p('gsm_ids    <- sub("\\.(methylated.*|unmethylated.*|detection.*)$","",cn[meth_idx],ignore.case=TRUE)');
+    p('');
+    p('meth_mat   <- as.matrix(dt[, meth_idx,   with=FALSE])');
+    p('unmeth_mat <- as.matrix(dt[, unmeth_idx, with=FALSE])');
+    p('detP_mat   <- if (length(detP_idx)) as.matrix(dt[, detP_idx, with=FALSE]) else NULL');
+    p('colnames(meth_mat) <- colnames(unmeth_mat) <- gsm_ids');
+    p('if (!is.null(detP_mat)) colnames(detP_mat) <- gsm_ids');
+    p('rownames(meth_mat) <- rownames(unmeth_mat) <- probe_ids');
+  } else if(fmt==='signal_ab'){
+    p('# ── 4. Read Signal_A / Signal_B table ───────────────────────────────────');
+    p('dt        <- fread(local_sig)');
+    p('probe_ids <- as.character(dt[[1]])');
+    p('cn        <- colnames(dt)');
+    p('');
+    p('meth_idx   <- which(grepl("Signal_B|sig_b", cn, ignore.case=TRUE))');
+    p('unmeth_idx <- which(grepl("Signal_A|sig_a", cn, ignore.case=TRUE))');
+    p('detP_idx   <- which(grepl("detection|pval",  cn, ignore.case=TRUE))');
+    p('gsm_ids    <- sub("\\.(Signal_A|Signal_B|Detection.*)$","",cn[meth_idx],ignore.case=TRUE)');
+    p('');
+    p('meth_mat   <- as.matrix(dt[, meth_idx,   with=FALSE])');
+    p('unmeth_mat <- as.matrix(dt[, unmeth_idx, with=FALSE])');
+    p('detP_mat   <- if (length(detP_idx)) as.matrix(dt[, detP_idx, with=FALSE]) else NULL');
+    p('colnames(meth_mat) <- colnames(unmeth_mat) <- gsm_ids');
+    p('if (!is.null(detP_mat)) colnames(detP_mat) <- gsm_ids');
+    p('rownames(meth_mat) <- rownames(unmeth_mat) <- probe_ids');
+  } else if(fmt==='precomputed_beta'){
+    p('# ── 4. Read pre-computed beta table ──────────────────────────────────────');
+    p('message("NOTE: Data appears to be pre-computed betas — skipping normalization.")');
+    p('dt        <- fread(local_sig)');
+    p('probe_ids <- as.character(dt[[1]])');
+    p('beta_mat  <- as.matrix(dt[, -1, with=FALSE])');
+    p('rownames(beta_mat) <- probe_ids');
+    p('detP_mat  <- NULL');
+  } else {
+    p('# ── 4. Read signal table (auto-detect columns) ───────────────────────────');
+    p('dt        <- fread(local_sig)');
+    p('probe_ids <- as.character(dt[[1]])');
+    p('cn        <- colnames(dt)');
+    p('');
+    p('meth_idx   <- which(grepl("meth.*sig|signal_b", cn, ignore.case=TRUE) &');
+    p('                    !grepl("unmeth|signal_a",   cn, ignore.case=TRUE))');
+    p('unmeth_idx <- which(grepl("unmeth|signal_a",   cn, ignore.case=TRUE))');
+    p('detP_idx   <- which(grepl("detect|pval",        cn, ignore.case=TRUE))');
+    p('stopifnot("Methylated columns not found"   = length(meth_idx)   > 0,');
+    p('          "Unmethylated columns not found" = length(unmeth_idx) > 0)');
+    p('');
+    p('meth_mat   <- as.matrix(dt[, meth_idx,   with=FALSE])');
+    p('unmeth_mat <- as.matrix(dt[, unmeth_idx, with=FALSE])');
+    p('detP_mat   <- if (length(detP_idx)) as.matrix(dt[, detP_idx, with=FALSE]) else NULL');
+    p('rownames(meth_mat) <- rownames(unmeth_mat) <- probe_ids');
+  }
+
+  if(fmt!=='precomputed_beta'){
+    p('');
+    p('# ── 5. Compute beta values ───────────────────────────────────────────────');
+    p('message("Computing beta values...")');
+    p('meth_num   <- suppressWarnings(apply(meth_mat,   2, as.numeric))');
+    p('unmeth_num <- suppressWarnings(apply(unmeth_mat, 2, as.numeric))');
+    p('rownames(meth_num) <- rownames(unmeth_num) <- probe_ids');
+    p('');
+    p('beta_mat <- meth_num / (meth_num + unmeth_num + offset)');
+    p('beta_mat[beta_mat < 0] <- 0');
+    p('beta_mat[beta_mat > 1] <- 1');
+    p('');
+    p('# ── 6. Detection p-value filter ──────────────────────────────────────────');
+    p('if (!is.null(detP_mat) && ncol(detP_mat) == ncol(beta_mat)) {');
+    p('  message("Applying detection p-value filter (threshold = ", detect_p_thresh, ")...")');
+    p('  detP_num <- suppressWarnings(apply(detP_mat, 2, as.numeric))');
+    p('  rownames(detP_num) <- probe_ids');
+    p('  failed    <- detP_num > detect_p_thresh');
+    p('  beta_mat[failed] <- NA');
+    p('  fail_frac <- rowMeans(is.na(beta_mat))');
+    p('  keep      <- fail_frac < probe_fail_max');
+    p('  message("Keeping ", sum(keep), " / ", length(keep), " probes")');
+    p('  beta_mat  <- beta_mat[keep, , drop = FALSE]');
+    p('} else {');
+    p('  message("No detection p-value columns found — skipping p-value filter.")');
+    p('}');
+  }
+
+  p('');
+  p('# ── 7. Series & sample metadata ──────────────────────────────────────────');
+  p('message("Fetching metadata from GEO...")');
+  p('gse_obj <- getGEO(gse_id, GSEMatrix = TRUE)[[1]]');
+  p('ei      <- experimentData(gse_obj)');
+  p('');
+  p('# Helper: safely pull a field from ei@other (returns NA if missing)');
+  p('geo_other <- function(key) {');
+  p('  v <- ei@other[[key]]');
+  p('  if (is.null(v) || length(v) == 0) NA_character_ else as.character(v[[1]])');
+  p('}');
+  p('');
+  p('series_meta <- data.frame(');
+  p('  Field = c("geo_accession","title","organism","platform",');
+  p('            "submission_date","last_update_date","pubmed_id","summary","overall_design"),');
+  p('  Value = c(');
+  p('    annotation(gse_obj),');
+  p('    if (nchar(ei@title) > 0) ei@title else geo_other("title"),');
+  p('    paste(unique(pData(gse_obj)$organism_ch1), collapse="; "),');
+  p('    paste(unique(pData(gse_obj)$platform_id),  collapse="; "),');
+  p('    geo_other("submission_date"),');
+  p('    geo_other("last_update_date"),');
+  p('    paste(pubMedIds(gse_obj), collapse="; "),');
+  p('    abstract(gse_obj),');
+  p('    geo_other("overall_design")');
+  p('  ), stringsAsFactors = FALSE)');
+  p('');
+  p('sample_meta <- pData(gse_obj)');
+  p('');
+  p('common <- intersect(rownames(sample_meta), colnames(beta_mat))');
+  p('if (length(common) == 0) {');
+  p('  gsm_in_cols <- regmatches(colnames(beta_mat),');
+  p('                             regexpr("GSM[0-9]+", colnames(beta_mat)))');
+  p('  colnames(beta_mat) <- ifelse(nchar(gsm_in_cols)>0, gsm_in_cols, colnames(beta_mat))');
+  p('  common <- intersect(rownames(sample_meta), colnames(beta_mat))');
+  p('}');
+  p('sample_meta <- sample_meta[common, , drop = FALSE]');
+  p('beta_mat    <- beta_mat[, common,  drop = FALSE]');
+  p('');
+  p('# ── 8. Write output files ─────────────────────────────────────────────');
+  p('message("Writing output files to: ", output_dir)');
+  p('');
+  p('write.table(series_meta, sep="\\t", row.names=FALSE, quote=FALSE,');
+  p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
+  p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
+  p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
+  p('# Sort probes alphabetically, then prepend ID_REF header column');
+  p('beta_sorted <- beta_mat[order(rownames(beta_mat)), , drop=FALSE]');
+  p('beta_out    <- data.frame(ID_REF = rownames(beta_sorted),');
+  p('                          beta_sorted,');
+  p('                          check.names=FALSE, stringsAsFactors=FALSE)');
+  p('write.table(beta_out, sep="\\t", row.names=FALSE, quote=FALSE,');
+  p('            file=file.path(output_dir, paste0(gse_id,"_methylation_values.tsv")))');
+  p('');
+  p('message("Done!")');
+  p('message("  ",gse_id,"_series_metadata.tsv")');
+  p('message("  ",gse_id,"_sample_metadata.tsv")');
+  p('message("  ",gse_id,"_methylation_values.tsv  (",');
+  p('        nrow(beta_out)-1," probes x ",(ncol(beta_out)-1)," samples)")');
+  return L.join('\n');
+}
+
+// ── Download ──
+function dlScript(content, name) {
+  var blob=new Blob([content],{type:'text/plain'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=name;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
-});
+}
 
-// ── Init ──────────────────────────────────────────────────────
-hljs.configure({ ignoreUnescapedHTML: true });
-seriesInput.focus();
+// ── Flow: start over ──
+function doStartOver() {
+  addMsg('user','Start over');
+  S={phase:'IDLE',gseId:null,ncbiMeta:null,matMeta:null,
+     signalFile:null,signalFmt:null,fileChoice:null,rScript:null};
+  // Hide chat, unlock input
+  chatStage.classList.remove('visible');
+  setTimeout(function(){
+    chatStage.classList.remove('show');
+    chatMessages.innerHTML='';
+    clearPanel();
+  }, 380);
+  inputStage.classList.remove('locked');
+  seriesInput.disabled=false; seriesInput.value='';
+  idSubmit.disabled=false;
+  setTimeout(function(){ seriesInput.focus(); }, 420);
+}
+
+// ── Flow handlers ──
+function onGseSubmit(gse) {
+  S.gseId=gse; S.phase='FETCHING_META';
+  revealChat();
+  addMsg('user','<code>'+esc(gse)+'</code>');
+  var ty=addTyping(); clearPanel();
+
+  fetchNCBIMeta(gse)
+    .then(function(meta){ S.ncbiMeta=meta; ty.remove(); onStudyFetched(meta); })
+    .catch(function(err){
+      ty.remove();
+      addMsg('alert',
+        '<strong>⚠ Could not reach GEO:</strong> <code>'+esc(err.message||'Network error')+'</code><br>'+
+        'If you opened this from the claude.ai Artifact link, external requests may be blocked '+
+        '— try downloading and opening the HTML file locally instead.');
+      S.phase='IDLE';
+      inputStage.classList.remove('locked');
+      seriesInput.disabled=false; idSubmit.disabled=false;
+      showBtns([{label:'Try another ID', fn:function(){
+        clearPanel();
+        inputStage.classList.remove('locked');
+        seriesInput.disabled=false; idSubmit.disabled=false;
+        seriesInput.value=''; seriesInput.focus();
+      }}]);
+    });
+}
+
+function onStudyFetched(meta) {
+  S.phase='CONFIRM_STUDY';
+  var parts = ['<p>I found this study in GEO:</p>'];
+  parts.push('<table class="meta-tbl">');
+  parts.push('<tr><td>Title</td><td><strong>'+esc(meta.title)+'</strong></td></tr>');
+  parts.push('<tr><td>Platform</td><td>'+esc(meta.gplName||(meta.gpl?meta.gpl:'—'))+'</td></tr>');
+  if(meta.organism) parts.push('<tr><td>Organism</td><td>'+esc(meta.organism)+'</td></tr>');
+  parts.push('<tr><td>Samples</td><td>'+esc(meta.nSamples>0?meta.nSamples:'—')+'</td></tr>');
+  if(meta.suppFiles.length) parts.push('<tr><td>Supp. files</td><td>'+esc(meta.suppFiles.join(', '))+'</td></tr>');
+  if(meta.pubmed.length) parts.push('<tr><td>PubMed</td><td>'+meta.pubmed.map(function(id){return '<a href="https://pubmed.ncbi.nlm.nih.gov/'+esc(id)+'/" target="_blank">'+esc(id)+'</a>';}).join(', ')+'</td></tr>');
+  parts.push('</table>');
+
+  if(meta.summary){
+    var brief = meta.summary.length>300 ? meta.summary.slice(0,300)+'…' : meta.summary;
+    parts.push('<p style="margin-top:10px;font-size:13px;color:var(--text-2);">'+esc(brief)+'</p>');
+  }
+  parts.push('<p style="margin-top:10px;">Does this look right?</p>');
+
+  addMsg('system', parts.join(''));
+  showBtns([
+    {label:'✓  Yes, that\'s right', primary:true, fn:onStudyYes},
+    {label:'✗  Wrong study',        fn:onStudyNo},
+  ]);
+}
+
+function onStudyNo() {
+  addMsg('user','✗  Wrong study');
+  addMsg('system','<p>No problem — please double-check the accession at <a href="https://www.ncbi.nlm.nih.gov/geo/" target="_blank">ncbi.nlm.nih.gov/geo</a> and try again.</p>');
+  S.phase='IDLE';
+  clearPanel();
+  inputStage.classList.remove('locked');
+  seriesInput.disabled=false; idSubmit.disabled=false;
+  seriesInput.value=''; seriesInput.focus();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function onStudyYes() {
+  addMsg('user','✓  Yes, that\'s right');
+  S.phase='FETCHING_FILES';
+  var ty=addTyping(); clearPanel();
+  var suppFiles=(S.ncbiMeta&&S.ncbiMeta.suppFiles)||[];
+
+  fetchLines(matrixUrl(S.gseId), 220)
+    .then(async function(lines){
+      S.matMeta=parseMatrix(lines);
+      // 1st pass: NCBI suppFiles list
+      var sigFilename=findSigFile(suppFiles);
+      // 2nd pass: FTP directory listing (more complete)
+      if(!sigFilename){
+        var dirFiles=await fetchSuppDir(S.gseId);
+        if(dirFiles.length) sigFilename=findSigFile(dirFiles);
+      }
+      S.signalFile=sigFilename;
+      if(sigFilename){
+        return fetchLines(suppUrl(S.gseId,sigFilename),12)
+          .then(function(sfLines){ var fmtRes=detectSigFmt(sfLines); S.signalFmt=fmtRes.format; ty.remove(); onFilesReady(lines,sfLines); })
+          .catch(function(){ ty.remove(); onFilesReady(lines,null); });
+      } else {
+        ty.remove(); onFilesReady(lines,null);
+      }
+    })
+    .catch(async function(err){
+      console.warn('[MS] matrix fetch failed:',err.message);
+      var sigFilename=findSigFile(suppFiles);
+      if(!sigFilename){
+        var dirFiles=await fetchSuppDir(S.gseId);
+        if(dirFiles.length) sigFilename=findSigFile(dirFiles);
+      }
+      S.signalFile=sigFilename;
+      ty.remove(); onFilesReady(null,null);
+    });
+}
+
+function onFilesReady(matrixLines, sigLines) {
+  S.phase='CONFIRM_FILE';
+  var meta=S.ncbiMeta||{}, mat=S.matMeta||{};
+  var suppFiles=meta.suppFiles||[];
+  var samples=mat.samples||[];
+  var nSamples=samples.length||meta.nSamples||0;
+  var idatAvail=hasIdat(suppFiles);
+
+  var parts=['<p>I pulled up the data files and previewed them.</p>'];
+
+  if(samples.length>0){
+    parts.push('<p>From the Series Matrix File, I found <strong>'+samples.length+' samples</strong>:</p>');
+    var show=Math.min(samples.length,24);
+    var chips='<div class="chips">';
+    for(var i=0;i<show;i++) chips+='<span class="chip">'+esc(samples[i].gsm||'')+'</span>';
+    if(samples.length>24) chips+='<span class="chip">+'+(samples.length-24)+' more</span>';
+    chips+='</div>'; parts.push(chips);
+    var hasTitles=samples.some(function(s){return s.title;});
+    if(hasTitles){
+      var tp=samples.slice(0,4).map(function(s){return esc(s.title||'');}).join(', ');
+      if(samples.length>4) tp+='…';
+      parts.push('<p style="font-size:12px;color:var(--text-2);margin-top:4px;">'+tp+'</p>');
+    }
+  } else if(nSamples>0){
+    parts.push('<p>This dataset has <strong>'+nSamples+' samples</strong>.</p>');
+  }
+
+  if(matrixLines&&matrixLines.length>0){
+    // Keep characteristics rows always; keep other !Sample_ rows only if they vary;
+    // skip supplementary_file rows entirely.
+    var sampleRows=matrixLines.filter(function(l){return l&&l.startsWith('!Sample_');});
+    var displayRows=sampleRows.filter(function(line){
+      if(/^!Sample_supplementary_file/i.test(line)) return false;
+      if(/^!Sample_characteristics/i.test(line)) return true; // always include
+      var ti=line.indexOf('\t');
+      if(ti<0) return false;
+      var vals=line.slice(ti+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
+      var first=vals[0];
+      return vals.some(function(v){return v!==first;});
+    });
+    if(displayRows.length>0){
+      // Parse each row into cells, strip quotes
+      var parsed=displayRows.map(function(line){
+        return line.split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
+      });
+      // Compute max character width per column across all rows
+      var colW=[];
+      parsed.forEach(function(cols){
+        cols.forEach(function(cell,ci){
+          if(!colW[ci]||cell.length>colW[ci]) colW[ci]=cell.length;
+        });
+      });
+      // Pad string to width with trailing spaces
+      function padR(s,w){var r=s||'';while(r.length<w)r+=' ';return r;}
+      // Build highlighted HTML; insert one blank line before first characteristics block
+      var seenChar=false;
+      var preHtml=displayRows.map(function(line,ri){
+        var isChar=/^!Sample_characteristics/i.test(line);
+        var prefix='';
+        if(isChar&&!seenChar){seenChar=true;prefix='\n';}
+        // Rebuild line with aligned columns (2-space separator; last col unpadded)
+        var cols=parsed[ri];
+        var aligned=cols.map(function(cell,ci){
+          return ci<cols.length-1 ? padR(cell,colW[ci]) : cell;
+        }).join('  ');
+        var escaped=esc(aligned);
+        if(isChar) return prefix+'<span style="background:var(--accent-subtle);color:var(--accent-text);display:inline-block;min-width:100%;padding:0 2px;margin:0;">'+escaped+'</span>';
+        return prefix+escaped;
+      }).join('\n');
+      parts.push('<div class="preview"><pre>'+preHtml+'</pre></div>');
+    }
+  }
+
+  var fmtLabels={two_row:'two-row header (row 1: GSM IDs, row 2: signal type labels)',combined:'combined column names (e.g. GSM12345.Methylated Signal)',signal_ab:'Signal_A / Signal_B format (Cy3 / Cy5 channels)',precomputed_beta:'pre-computed beta values (already normalized 0–1)',unknown:'unrecognized format — will attempt auto-detection'};
+  parts.push('<p style="margin-top:12px;">');
+  if(idatAvail&&S.signalFile){
+    parts.push('This dataset includes raw <strong>IDAT files</strong> and a signal table (<span class="file-badge">📄 '+esc(S.signalFile)+'</span>).');
+    var fd=fmtLabels[S.signalFmt]||'';
+    if(fd) parts.push(' <em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em>');
+    parts.push('<br>Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?');
+    if(sigLines&&sigLines.length>0)
+      parts.push('<div class="preview" style="margin-top:6px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+  } else if(idatAvail){
+    parts.push('This dataset includes raw <strong>IDAT files</strong>. Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?');
+  } else if(S.signalFile){
+    parts.push('I found a signal table file: <span class="file-badge">📄 '+esc(S.signalFile)+'</span>');
+    var fd2=fmtLabels[S.signalFmt]||'';
+    if(fd2) parts.push('<br><em style="font-size:12px;">Detected format: '+esc(fd2)+'</em>');
+    if(sigLines&&sigLines.length>0)
+      parts.push('<div class="preview" style="margin-top:6px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+    parts.push('<br>Should I write a script to compute beta values from this file?');
+  } else {
+    parts.push('I couldn\'t automatically detect supplementary files. Choose which type of script to generate:');
+  }
+  parts.push('</p>');
+
+  addMsg('system',parts.join(''));
+
+  var btns=[];
+  if(idatAvail){
+    btns.push({label:'✓ Use IDAT files (recommended)',primary:true,fn:function(){onFileChoice('idat');}});
+    btns.push({label:'Use signal table instead',fn:function(){onFileChoice('signal');}});
+  } else if(S.signalFile){
+    btns.push({label:'✓ Yes, use signal table',primary:true,fn:function(){onFileChoice('signal');}});
+  } else {
+    btns.push({label:'Write IDAT script',primary:true,fn:function(){onFileChoice('idat');}});
+    btns.push({label:'Write signal table script',fn:function(){onFileChoice('signal');}});
+  }
+  showBtns(btns);
+}
+
+function onFileChoice(choice) {
+  console.log('[MS] onFileChoice:', choice, '| S.signalFile:', S.signalFile);
+  if(choice==='signal' && !S.signalFile){
+    // No file auto-detected — ask the user for the filename before proceeding
+    showFilenamePrompt();
+    return;
+  }
+  S.fileChoice=choice; S.phase='DONE';
+  addMsg('user','✓ '+(choice==='idat'?'IDAT files':'signal table'));
+  var ty=addTyping(); clearPanel();
+  setTimeout(function(){ ty.remove(); showScript(); }, 700);
+}
+
+function showFilenamePrompt() {
+  clearPanel();
+  // Build the message bubble manually so we can embed a live input inside it
+  var row=document.createElement('div');
+  row.className='msg-row system';
+  var bub=document.createElement('div');
+  bub.className='msg-bubble';
+
+  var p=document.createElement('p');
+  p.innerHTML='I couldn\'t automatically find a signal table in the supplementary files. Please enter the exact filename — you can find it on the <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc='+esc(S.gseId)+'" target="_blank">GEO page</a> under "Supplementary file".';
+  bub.appendChild(p);
+
+  var wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;gap:8px;align-items:center;margin-top:10px;';
+  var inp=document.createElement('input');
+  inp.type='text';
+  inp.placeholder='e.g. '+S.gseId+'_signal.txt.gz';
+  inp.style.cssText='flex:1;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-alt);color:var(--text);outline:none;min-width:0;';
+  var btn=document.createElement('button');
+  btn.className='c-btn primary'; btn.textContent='Use this file';
+
+  function submit(){
+    var name=inp.value.trim();
+    if(!name) return;
+    S.signalFile=name;
+    // Freeze the prompt row
+    inp.disabled=true; btn.disabled=true;
+    addMsg('user',esc(name));
+    S.fileChoice='signal'; S.phase='DONE';
+    clearPanel();
+    var ty=addTyping();
+    fetchLines(suppUrl(S.gseId,name),12)
+      .then(function(sfLines){ var fmtRes=detectSigFmt(sfLines); S.signalFmt=fmtRes.format; ty.remove(); showScript(); })
+      .catch(function(){ ty.remove(); showScript(); });
+  }
+  btn.addEventListener('click',submit);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') submit(); });
+
+  wrap.appendChild(inp); wrap.appendChild(btn);
+  bub.appendChild(wrap);
+  row.appendChild(bub);
+  chatMessages.appendChild(row);
+  scrollBot();
+  inp.focus();
+}
+
+function showScript() {
+  var gse=S.gseId, ncbi=S.ncbiMeta||{}, mat=S.matMeta||{};
+  var gpl=(mat.gpl||ncbi.gpl||'').toUpperCase();
+  var arr=GPL_TYPE[gpl]||ncbi.arrType||'450K';
+  var n=mat.nSamples||ncbi.nSamples||0;
+  var useIdat=S.fileChoice==='idat';
+
+  var script=useIdat?buildIdatScript(gse,arr,n):buildSigScript(gse,arr,S.signalFmt,S.signalFile,n);
+  S.rScript=script;
+
+  var runTime=runTimeEst(n,arr,useIdat);
+  var fname=gse+'_normalize.R';
+  var methodStr=useIdat?('minfi <code>'+(arr==='27K'?'preprocessQuantile':'preprocessFunnorm')+'</code>'):'beta computation from signal table';
+  var probeNote=n>0?('~ probes × '+n+' samples'):'probes × samples';
+
+  var html=[
+    '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
+    '<ul class="out-list">',
+    '<li><span class="out-num">1</span><div>',
+    '<div class="out-fname">'+esc(gse+'_series_metadata.tsv')+'</div>',
+    '<div class="out-desc">Series-level metadata from GEO</div></div></li>',
+    '<li><span class="out-num">2</span><div>',
+    '<div class="out-fname">'+esc(gse+'_sample_metadata.tsv')+'</div>',
+    '<div class="out-desc">Sample phenotype / annotation table</div></div></li>',
+    '<li><span class="out-num">3</span><div>',
+    '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
+    '<div class="out-desc">Normalized beta values ('+esc(probeNote)+', values 0–1)</div></div></li>',
+    '</ul>',
+    '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong></p>',
+    '<div class="r-wrap">',
+    '<div class="r-head">',
+    '<span class="r-head-name">'+esc(fname)+'</span>',
+    '<button class="copy-btn" id="copy-r">Copy</button>',
+    '</div>',
+    '<div class="r-body"><pre><code class="language-r" id="r-code">'+esc(script)+'</code></pre></div>',
+    '</div>',
+  ].join('');
+
+  var bub=addMsg('system',html);
+
+  var codeEl=bub.querySelector('#r-code');
+  if(codeEl&&typeof hljs!=='undefined') hljs.highlightElement(codeEl);
+
+  var copyBtn=bub.querySelector('#copy-r');
+  if(copyBtn){
+    copyBtn.addEventListener('click',function(){
+      var done=function(){copyBtn.textContent='Copied!';setTimeout(function(){copyBtn.textContent='Copy';},1800);};
+      if(navigator.clipboard) navigator.clipboard.writeText(script).then(done).catch(done);
+      else{var ta=document.createElement('textarea');ta.value=script;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);done();}
+    });
+  }
+
+  showBtns([
+    {label:'▶  Run here', disabled:true, tip:'In-browser execution — coming soon'},
+    {label:'⬇  Download '+fname, primary:true, fn:function(){dlScript(script,fname);}},
+    {label:'Start over', fn:doStartOver},
+  ]);
+  scrollBot();
+}
+
+// ── Init ──
+(function(){
+  function submit() {
+    var v=seriesInput.value.trim().toUpperCase();
+    if(/^\d+$/.test(v)) v='GSE'+v;
+    if(!/^GSE\d+$/.test(v)){
+      idError.style.display='block'; seriesInput.focus(); return;
+    }
+    idError.style.display='none';
+    idSubmit.disabled=true; seriesInput.disabled=true;
+    inputStage.classList.add('locked');
+    chatIdLabel.textContent=v;
+    onGseSubmit(v);
+  }
+  idSubmit.addEventListener('click', submit);
+  seriesInput.addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+  seriesInput.addEventListener('input', function(){ idError.style.display='none'; });
+  setTimeout(function(){ seriesInput.focus(); }, 80);
+})();
 </script>
+</body>
+</html>
