@@ -732,8 +732,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('# Samples:  '+(n||'unknown'));
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
-  p('#           '+gse+'_methylation_values.tsv');
-  p('#           '+gse+'_gene_level_betas.tsv');
+  p('#           '+gse+'_methylation_values.tsv  (gene-level)');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
@@ -870,26 +869,13 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('  beta_mat    <- beta_mat[, common,  drop = FALSE]');
   p('}');
   p('');
-  p('# ── 10. Write output files ─────────────────────────────────────────────');
-  p('message("Writing output files to: ", output_dir)');
+  p('# ── 10. Write series & sample metadata ────────────────────────────────────');
+  p('message("Writing metadata files to: ", output_dir)');
   p('');
   p('write.table(series_meta, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
   p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
-  p('# Sort probes alphabetically, then prepend ID_REF header column');
-  p('beta_sorted <- beta_mat[order(rownames(beta_mat)), , drop=FALSE]');
-  p('beta_out    <- data.frame(ID_REF = rownames(beta_sorted),');
-  p('                          beta_sorted,');
-  p('                          check.names=FALSE, stringsAsFactors=FALSE)');
-  p('write.table(beta_out, sep="\\t", row.names=FALSE, quote=FALSE,');
-  p('            file=file.path(output_dir, paste0(gse_id,"_methylation_values.tsv")))');
-  p('');
-  p('message("Done!")');
-  p('message("  ",gse_id,"_series_metadata.tsv")');
-  p('message("  ",gse_id,"_sample_metadata.tsv")');
-  p('message("  ",gse_id,"_methylation_values.tsv  (",');
-  p('        nrow(beta_out)," probes x ",(ncol(beta_out)-1)," samples)")');
   p('');
   // ── Gene-level aggregation block ──
   var regionLabel = regions==='promoter'?'Promoter (TSS200, TSS1500, 1stExon)':
@@ -977,8 +963,12 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('gene_out <- data.frame(Gene = rownames(gene_betas), gene_betas,');
   p('                       check.names = FALSE, stringsAsFactors = FALSE)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
-  p('            file = file.path(output_dir, paste0(gse_id, "_gene_level_betas.tsv")))');
-  p('message("  ", gse_id, "_gene_level_betas.tsv  (",');
+  p('            file = file.path(output_dir, paste0(gse_id, "_methylation_values.tsv")))');
+  p('');
+  p('message("Done!")');
+  p('message("  ", gse_id, "_series_metadata.tsv")');
+  p('message("  ", gse_id, "_sample_metadata.tsv")');
+  p('message("  ", gse_id, "_methylation_values.tsv  (",');
   p('        nrow(gene_betas), " genes x ", ncol(gene_betas), " samples)")');
   return L.join('\n');
 }
@@ -999,8 +989,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
                                    'IlluminaHumanMethylationEPICanno.ilm10b4.hg19';
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
-  p('#           '+gse+'_methylation_values.tsv');
-  p('#           '+gse+'_gene_level_betas.tsv');
+  p('#           '+gse+'_methylation_values.tsv  (gene-level)');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
@@ -1185,26 +1174,13 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('sample_meta <- sample_meta[common, , drop = FALSE]');
   p('beta_mat    <- beta_mat[, common,  drop = FALSE]');
   p('');
-  p('# ── 8. Write output files ─────────────────────────────────────────────');
-  p('message("Writing output files to: ", output_dir)');
+  p('# ── 8. Write metadata files ────────────────────────────────────────────');
+  p('message("Writing metadata files to: ", output_dir)');
   p('');
   p('write.table(series_meta, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
   p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
-  p('# Sort probes alphabetically, then prepend ID_REF header column');
-  p('beta_sorted <- beta_mat[order(rownames(beta_mat)), , drop=FALSE]');
-  p('beta_out    <- data.frame(ID_REF = rownames(beta_sorted),');
-  p('                          beta_sorted,');
-  p('                          check.names=FALSE, stringsAsFactors=FALSE)');
-  p('write.table(beta_out, sep="\\t", row.names=FALSE, quote=FALSE,');
-  p('            file=file.path(output_dir, paste0(gse_id,"_methylation_values.tsv")))');
-  p('');
-  p('message("Done!")');
-  p('message("  ",gse_id,"_series_metadata.tsv")');
-  p('message("  ",gse_id,"_sample_metadata.tsv")');
-  p('message("  ",gse_id,"_methylation_values.tsv  (",');
-  p('        nrow(beta_out)-1," probes x ",(ncol(beta_out)-1)," samples)")');
   p('');
   // ── Gene-level aggregation block (signal path) ──
   var regionLabelSig = regions==='promoter'?'Promoter (TSS200, TSS1500, 1stExon)':
@@ -1291,8 +1267,12 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('gene_out <- data.frame(Gene = rownames(gene_betas), gene_betas,');
   p('                       check.names = FALSE, stringsAsFactors = FALSE)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
-  p('            file = file.path(output_dir, paste0(gse_id, "_gene_level_betas.tsv")))');
-  p('message("  ", gse_id, "_gene_level_betas.tsv  (",');
+  p('            file = file.path(output_dir, paste0(gse_id, "_methylation_values.tsv")))');
+  p('');
+  p('message("Done!")');
+  p('message("  ", gse_id, "_series_metadata.tsv")');
+  p('message("  ", gse_id, "_sample_metadata.tsv")');
+  p('message("  ", gse_id, "_methylation_values.tsv  (",');
   p('        nrow(gene_betas), " genes x ", ncol(gene_betas), " samples)")');
   return L.join('\n');
 }
@@ -1700,7 +1680,7 @@ function showScript() {
     esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
     esc(aggLabels[S.aggFunc]||'mean');
   var html=[
-    '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 4 files:</p>',
+    '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
     '<ul class="out-list">',
     '<li><span class="out-num">1</span><div>',
     '<div class="out-fname">'+esc(gse+'_series_metadata.tsv')+'</div>',
@@ -1710,9 +1690,6 @@ function showScript() {
     '<div class="out-desc">Sample phenotype / annotation table</div></div></li>',
     '<li><span class="out-num">3</span><div>',
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
-    '<div class="out-desc">Normalized probe-level beta values ('+esc(probeNote)+', values 0–1)</div></div></li>',
-    '<li><span class="out-num">4</span><div>',
-    '<div class="out-fname">'+esc(gse+'_gene_level_betas.tsv')+'</div>',
     '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
     '</ul>',
     '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong></p>',
