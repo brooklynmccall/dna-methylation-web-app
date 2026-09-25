@@ -1523,27 +1523,26 @@ function onFilesReady(matrixLines, sigLines) {
   }
 
   var fmtLabels={two_row:'two-row header (row 1: GSM IDs, row 2: signal type labels)',combined:'combined column names (e.g. GSM12345.Methylated Signal)',signal_ab:'Signal_A / Signal_B format (Cy3 / Cy5 channels)',precomputed_beta:'pre-computed beta values (already normalized 0–1)',unknown:'unrecognized format — will attempt auto-detection'};
-  parts.push('<p style="margin-top:12px;">');
   if(idatAvail&&S.signalFile){
-    parts.push('This dataset includes raw <strong>IDAT files</strong> and a signal table (<span class="file-badge">📄 '+esc(S.signalFile)+'</span>).');
     var fd=fmtLabels[S.signalFmt]||'';
-    if(fd) parts.push(' <em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em>');
-    parts.push('<br>Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?');
+    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> and a signal table:</p>');
+    parts.push('<p style="margin:4px 0 2px;"><span class="file-badge">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
-      parts.push('<div class="preview" style="margin-top:6px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+    if(fd) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>');
+    parts.push('<p style="margin-top:8px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?</p>');
   } else if(idatAvail){
-    parts.push('This dataset includes raw <strong>IDAT files</strong>. Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?');
+    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>. Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
   } else if(S.signalFile){
-    parts.push('I found a signal table file: <span class="file-badge">📄 '+esc(S.signalFile)+'</span>');
     var fd2=fmtLabels[S.signalFmt]||'';
-    if(fd2) parts.push('<br><em style="font-size:12px;">Detected format: '+esc(fd2)+'</em>');
+    parts.push('<p style="margin-top:12px;">I found a signal table file: <span class="file-badge">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
-      parts.push('<div class="preview" style="margin-top:6px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
-    parts.push('<br>Should I write a script to compute beta values from this file?');
+      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+    if(fd2) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;">Detected format: '+esc(fd2)+'</em></p>');
+    parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from this file?</p>');
   } else {
-    parts.push('I couldn\'t automatically detect supplementary files. Choose which type of script to generate:');
+    parts.push('<p style="margin-top:12px;">I couldn\'t automatically detect supplementary files. Choose which type of script to generate:</p>');
   }
-  parts.push('</p>');
 
   addMsg('system',parts.join(''));
 
