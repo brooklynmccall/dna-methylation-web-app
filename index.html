@@ -1499,9 +1499,9 @@ function onFilesReady(matrixLines, sigLines) {
       var showN=Math.min(gsmIds.length,MAX_SAMPLES);
       var moreN=gsmIds.length-showN;
 
-      var thead='<thead><tr><th>GEO Accession</th>';
+      var thead='<thead><tr><th class="char-th">GEO Accession</th>';
       columns.forEach(function(col){
-        thead+='<th class="'+(col.isChar?'char-th':'')+'">'+(esc(col.label))+'</th>';
+        thead+='<th class="char-th">'+(esc(col.label))+'</th>';
       });
       thead+='</tr></thead>';
 
