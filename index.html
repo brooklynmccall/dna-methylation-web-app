@@ -743,12 +743,30 @@ function findSigFile(files) {
   return (pref.length?pref:txt)[0]||null;
 }
 function runTimeEst(n,type,idat) {
-  if(!n) return '10–30 minutes';
-  var mpp=idat?(type==='27K'?.5:type==='450K'?1.5:2):(type==='27K'?.1:type==='450K'?.3:.5);
-  var t=Math.round(n*mpp);
-  if(t<3)return '1–3 minutes';if(t<10)return '3–10 minutes';
-  if(t<25)return '10–25 minutes';if(t<60)return '25–60 minutes';
-  return '60+ minutes';
+  // Model: fixed base overhead + per-sample component (minutes, modern laptop)
+  // IDAT path: bottleneck is minfi normalization (preprocessFunnorm / preprocessQuantile)
+  // Signal path: I/O + beta arithmetic only — much lighter
+  var base,rate;
+  if(idat){
+    if(type==='27K')       {base=1.0; rate=0.05;}
+    else if(type==='450K') {base=5.0; rate=0.20;}
+    else if(type==='EPICv2'){base=9.0; rate=0.35;}
+    else                   {base=8.0; rate=0.30;} // EPIC
+  } else {
+    if(type==='27K')       {base=0.5; rate=0.02;}
+    else if(type==='450K') {base=1.0; rate=0.05;}
+    else                   {base=1.5; rate=0.08;} // EPIC/EPICv2
+  }
+  if(!n) {base*=1; rate*=20;} // no sample count: use a representative mid-range
+  var t=base+(n||20)*rate;
+  // Show a ±35% range to reflect machine variation
+  var lo=Math.max(1,Math.round(t*0.65));
+  var hi=Math.round(t*1.35);
+  if(hi<2) return 'under 2 min';
+  if(hi<60) return lo+'–'+hi+' min';
+  var loH=(lo/60).toFixed(1).replace(/\.0$/,'');
+  var hiH=(hi/60).toFixed(1).replace(/\.0$/,'');
+  return loH+'–'+hiH+' hr';
 }
 
 // ── R Script — IDAT path ──
@@ -1758,7 +1776,7 @@ function showScript() {
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
     '<div class="out-desc">'+geneLevelNote+' — rows: GEO accessions, columns: genes</div></div></li>',
     '</ul>',
-    '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong></p>',
+    '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong> <span style="font-weight:400;font-size:12px;">(varies by machine speed and available RAM)</span></p>',
     '<div class="r-wrap">',
     '<div class="r-head">',
     '<span class="r-head-name">'+esc(fname)+'</span>',
