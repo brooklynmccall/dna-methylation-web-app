@@ -246,6 +246,17 @@ main { max-width: 680px; margin: 0 auto; }
 }
 .preview pre { font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; color: #c9d1d9; white-space: pre; }
 
+/* ── Sample characteristics tidy table ── */
+.tbl-scroll { overflow-x: auto; overflow-y: auto; max-height: 220px; margin-top: 8px; border-radius: 7px; border: 1px solid var(--border); }
+.sample-char-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sample-char-tbl th { padding: 6px 10px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; background: var(--surface-alt); border-bottom: 1.5px solid var(--border); white-space: nowrap; color: var(--text-2); position: sticky; top: 0; z-index: 1; }
+.sample-char-tbl th.char-th { background: var(--accent-subtle); color: var(--accent-text); }
+.sample-char-tbl td { padding: 5px 10px; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap; color: var(--text); }
+.sample-char-tbl tbody tr:last-child td { border-bottom: none; }
+.sample-char-tbl tbody tr:hover td { background: var(--surface-alt); }
+.gsm-code { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent-text); }
+.tbl-more { text-align: center !important; color: var(--text-2) !important; font-style: italic; padding: 6px 10px !important; }
+
 /* ── Output list ── */
 .out-list { list-style: none; margin-top: 8px; }
 .out-list li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -1436,48 +1447,78 @@ function onFilesReady(matrixLines, sigLines) {
   }
 
   if(matrixLines&&matrixLines.length>0){
-    // Keep characteristics rows always; keep other !Sample_ rows only if they vary;
-    // skip supplementary_file rows entirely.
+    // Build tidy table: rows = samples (GSM accessions), columns = characteristics / metadata fields
+    // 1. Get GSM accession order
+    var gsmRow=matrixLines.find(function(l){return /^!Sample_geo_accession\t/i.test(l);});
+    var gsmIds=gsmRow ? gsmRow.slice(gsmRow.indexOf('\t')+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();}) : [];
+
+    // 2. Collect columns: characteristics rows (parsed key:value) + varying non-supplementary fields
+    // Each column: { label, isChar, values[] }
+    var columns=[];
+    var charColMap={}; // key -> column index, to merge duplicate characteristic keys
     var sampleRows=matrixLines.filter(function(l){return l&&l.startsWith('!Sample_');});
-    var displayRows=sampleRows.filter(function(line){
-      if(/^!Sample_supplementary_file/i.test(line)) return false;
-      if(/^!Sample_characteristics/i.test(line)) return true; // always include
+    sampleRows.forEach(function(line){
+      if(/^!Sample_supplementary_file/i.test(line)) return;
+      if(/^!Sample_geo_accession/i.test(line)) return;
       var ti=line.indexOf('\t');
-      if(ti<0) return false;
-      var vals=line.slice(ti+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
-      var first=vals[0];
-      return vals.some(function(v){return v!==first;});
-    });
-    if(displayRows.length>0){
-      // Parse each row into cells, strip quotes
-      var parsed=displayRows.map(function(line){
-        return line.split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
-      });
-      // Compute max character width per column across all rows
-      var colW=[];
-      parsed.forEach(function(cols){
-        cols.forEach(function(cell,ci){
-          if(!colW[ci]||cell.length>colW[ci]) colW[ci]=cell.length;
+      if(ti<0) return;
+      var rawKey=line.slice(8,ti).trim(); // strip '!Sample_'
+      var rawVals=line.slice(ti+1).split('\t').map(function(x){return x.replace(/^"+|"+$/g,'').trim();});
+      if(/^characteristics_ch\d*/i.test(rawKey)){
+        // Parse "key: value" cells — use first non-empty cell's key as column label
+        var colKey='';
+        var values=rawVals.map(function(cell){
+          var m=cell.match(/^([^:]+):\s*(.*)/);
+          if(m){if(!colKey)colKey=m[1].trim();return m[2].trim();}
+          return cell;
         });
+        if(!colKey) colKey=rawKey;
+        var normKey=colKey.toLowerCase();
+        if(charColMap.hasOwnProperty(normKey)){
+          // Merge: append non-empty values to existing column
+          var existing=columns[charColMap[normKey]];
+          values.forEach(function(v,i){if(v&&!existing.values[i])existing.values[i]=v;});
+        } else {
+          charColMap[normKey]=columns.length;
+          columns.push({label:colKey,isChar:true,values:values});
+        }
+      } else {
+        // Non-characteristic field: only include if values vary
+        var first=rawVals[0];
+        var varies=rawVals.some(function(v){return v!==first;});
+        if(varies){
+          // Clean up field name: replace underscores with spaces, title-case
+          var label=rawKey.replace(/_ch\d*$/,'').replace(/_/g,' ');
+          columns.push({label:label,isChar:false,values:rawVals});
+        }
+      }
+    });
+
+    if(columns.length>0&&gsmIds.length>0){
+      var MAX_SAMPLES=6;
+      var showN=Math.min(gsmIds.length,MAX_SAMPLES);
+      var moreN=gsmIds.length-showN;
+
+      var thead='<thead><tr><th>GEO Accession</th>';
+      columns.forEach(function(col){
+        thead+='<th class="'+(col.isChar?'char-th':'')+'">'+(esc(col.label))+'</th>';
       });
-      // Pad string to width with trailing spaces
-      function padR(s,w){var r=s||'';while(r.length<w)r+=' ';return r;}
-      // Build highlighted HTML; insert one blank line before first characteristics block
-      var seenChar=false;
-      var preHtml=displayRows.map(function(line,ri){
-        var isChar=/^!Sample_characteristics/i.test(line);
-        var prefix='';
-        if(isChar&&!seenChar){seenChar=true;prefix='\n';}
-        // Rebuild line with aligned columns (2-space separator; last col unpadded)
-        var cols=parsed[ri];
-        var aligned=cols.map(function(cell,ci){
-          return ci<cols.length-1 ? padR(cell,colW[ci]) : cell;
-        }).join('  ');
-        var escaped=esc(aligned);
-        if(isChar) return prefix+'<span style="background:var(--accent-subtle);color:var(--accent-text);display:inline-block;min-width:100%;padding:0 2px;margin:0;">'+escaped+'</span>';
-        return prefix+escaped;
-      }).join('\n');
-      parts.push('<div class="preview"><pre>'+preHtml+'</pre></div>');
+      thead+='</tr></thead>';
+
+      var tbody='<tbody>';
+      for(var si=0;si<showN;si++){
+        tbody+='<tr><td class="gsm-code">'+esc(gsmIds[si])+'</td>';
+        columns.forEach(function(col){
+          tbody+='<td>'+(esc(col.values[si]||''))+'</td>';
+        });
+        tbody+='</tr>';
+      }
+      if(moreN>0){
+        tbody+='<tr><td class="tbl-more" colspan="'+(columns.length+1)+'">+ '+moreN+' more sample'+(moreN>1?'s':'')+'</td></tr>';
+      }
+      tbody+='</tbody>';
+
+      parts.push('<div class="tbl-scroll"><table class="sample-char-tbl">'+thead+tbody+'</table></div>');
     }
   }
 
