@@ -1661,18 +1661,13 @@ function onAskRegions() {
       fn: function() { onRegionChoice('promoter'); }
     },
     {
-      label: 'Promoter + Gene body (TSS200, TSS1500, 5\'UTR, 1stExon, Body)',
-      desc: 'Combines promoter-proximal and gene body probes for a comprehensive per-gene summary. Useful when you want to capture both regulatory (silencing) and coding-region (activation) signals in a single value.',
-      fn: function() { onRegionChoice('promoter_body'); }
-    },
-    {
       label: 'Gene body only (Body)',
       desc: 'Probes within the transcribed region only. Gene body methylation is positively correlated with expression and is particularly relevant in studies of cancer, development, and alternative splicing.',
       fn: function() { onRegionChoice('body'); }
     },
     {
       label: 'All annotated probes',
-      desc: 'Every probe assigned to any gene region (TSS200, TSS1500, 5\'UTR, 1stExon, Body, 3\'UTR). Best for broad exploratory analyses where maximum coverage is preferred over mechanistic specificity.',
+      desc: 'Every probe assigned to any gene region (TSS200, TSS1500, 5\'UTR, 1stExon, Body, 3\'UTR). Note: because promoter methylation silences gene expression while gene body methylation is associated with activation, averaging across both regions can produce values that cancel each other out and are difficult to interpret. This option is uncommon in practice and is best reserved for broad exploratory analyses.',
       fn: function() { onRegionChoice('all'); }
     },
   ]);
