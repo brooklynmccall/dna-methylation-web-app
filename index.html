@@ -874,7 +874,8 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('');
   p('write.table(series_meta, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
-  p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
+  p('sample_out <- cbind(GEO_Accession = rownames(sample_meta), sample_meta)');
+  p('write.table(sample_out, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
   p('');
   // ── Gene-level aggregation block ──
@@ -959,9 +960,9 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
     p('rownames(gene_betas) <- all_genes');
   }
   p('');
-  p('# Write gene-level output');
-  p('gene_out <- data.frame(Gene = rownames(gene_betas), gene_betas,');
-  p('                       check.names = FALSE, stringsAsFactors = FALSE)');
+  p('# Transpose to tidy format: samples as rows, genes as columns');
+  p('gene_t   <- as.data.frame(t(gene_betas), check.names = FALSE, stringsAsFactors = FALSE)');
+  p('gene_out <- cbind(GEO_Accession = rownames(gene_t), gene_t)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
   p('            file = file.path(output_dir, paste0(gse_id, "_methylation_values.tsv")))');
   p('');
@@ -969,7 +970,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('message("  ", gse_id, "_series_metadata.tsv")');
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
-  p('        nrow(gene_betas), " genes x ", ncol(gene_betas), " samples)")');
+  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " genes)")');
   return L.join('\n');
 }
 
@@ -1179,7 +1180,8 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('');
   p('write.table(series_meta, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_series_metadata.tsv")))');
-  p('write.table(sample_meta, sep="\\t", row.names=TRUE, col.names=NA, quote=FALSE,');
+  p('sample_out <- cbind(GEO_Accession = rownames(sample_meta), sample_meta)');
+  p('write.table(sample_out, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
   p('');
   // ── Gene-level aggregation block (signal path) ──
@@ -1263,9 +1265,9 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
     p('rownames(gene_betas) <- all_genes');
   }
   p('');
-  p('# Write gene-level output');
-  p('gene_out <- data.frame(Gene = rownames(gene_betas), gene_betas,');
-  p('                       check.names = FALSE, stringsAsFactors = FALSE)');
+  p('# Transpose to tidy format: samples as rows, genes as columns');
+  p('gene_t   <- as.data.frame(t(gene_betas), check.names = FALSE, stringsAsFactors = FALSE)');
+  p('gene_out <- cbind(GEO_Accession = rownames(gene_t), gene_t)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
   p('            file = file.path(output_dir, paste0(gse_id, "_methylation_values.tsv")))');
   p('');
@@ -1273,7 +1275,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('message("  ", gse_id, "_series_metadata.tsv")');
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
-  p('        nrow(gene_betas), " genes x ", ncol(gene_betas), " samples)")');
+  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " genes)")');
   return L.join('\n');
 }
 
@@ -1687,10 +1689,10 @@ function showScript() {
     '<div class="out-desc">Series-level metadata from GEO</div></div></li>',
     '<li><span class="out-num">2</span><div>',
     '<div class="out-fname">'+esc(gse+'_sample_metadata.tsv')+'</div>',
-    '<div class="out-desc">Sample phenotype / annotation table</div></div></li>',
+    '<div class="out-desc">Sample phenotype / annotation table — rows: GEO accessions, columns: characteristics</div></div></li>',
     '<li><span class="out-num">3</span><div>',
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
-    '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
+    '<div class="out-desc">'+geneLevelNote+' — rows: GEO accessions, columns: genes</div></div></li>',
     '</ul>',
     '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong></p>',
     '<div class="r-wrap">',
