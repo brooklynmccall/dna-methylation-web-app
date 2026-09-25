@@ -878,9 +878,9 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
   p('');
   // ── Gene-level aggregation block ──
-  var regionLabel = regions==='promoter'?'Promoter (TSS200, TSS1500, 1stExon)':
+  var regionLabel = regions==='promoter'?'Promoter (TSS200, TSS1500, 5\'UTR, 1stExon)':
                     regions==='body'?'Gene body (Body)':
-                    regions==='promoter_body'?'Promoter + Gene body (TSS200, TSS1500, 1stExon, Body)':
+                    regions==='promoter_body'?'Promoter + Gene body (TSS200, TSS1500, 5\'UTR, 1stExon, Body)':
                     'All annotated probes';
   var aggLabel = aggFunc==='median'?'Median':aggFunc==='pc1'?'First principal component (PC1)':'Mean';
   p('# ── 11. Gene-level aggregation ─────────────────────────────────────────');
@@ -893,14 +893,14 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('');
   // Region filter
   if(regions==='promoter'){
-    p('# Filter: promoter-proximal probes (TSS200, TSS1500, 1stExon)');
-    p('keep_region <- grepl("TSS200|TSS1500|1stExon", anno$UCSC_RefGene_Group)');
+    p('# Filter: promoter-proximal probes (TSS200, TSS1500, 5\'UTR, 1stExon)');
+    p('keep_region <- grepl("TSS200|TSS1500|5\'UTR|1stExon", anno$UCSC_RefGene_Group)');
   } else if(regions==='body'){
     p('# Filter: gene body probes only (Body)');
     p('keep_region <- grepl("\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
   } else if(regions==='promoter_body'){
-    p('# Filter: promoter + gene body probes (TSS200, TSS1500, 1stExon, Body)');
-    p('keep_region <- grepl("TSS200|TSS1500|1stExon|\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
+    p('# Filter: promoter + gene body probes (TSS200, TSS1500, 5\'UTR, 1stExon, Body)');
+    p('keep_region <- grepl("TSS200|TSS1500|5\'UTR|1stExon|\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
   } else {
     p('# Filter: all probes with any gene annotation');
     p('keep_region <- !is.na(anno$UCSC_RefGene_Name) & anno$UCSC_RefGene_Name != ""');
@@ -1183,9 +1183,9 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
   p('');
   // ── Gene-level aggregation block (signal path) ──
-  var regionLabelSig = regions==='promoter'?'Promoter (TSS200, TSS1500, 1stExon)':
+  var regionLabelSig = regions==='promoter'?'Promoter (TSS200, TSS1500, 5\'UTR, 1stExon)':
                        regions==='body'?'Gene body (Body)':
-                       regions==='promoter_body'?'Promoter + Gene body (TSS200, TSS1500, 1stExon, Body)':
+                       regions==='promoter_body'?'Promoter + Gene body (TSS200, TSS1500, 5\'UTR, 1stExon, Body)':
                        'All annotated probes';
   var aggLabelSig = aggFunc==='median'?'Median':aggFunc==='pc1'?'First principal component (PC1)':'Mean';
   p('# ── 9. Gene-level aggregation ─────────────────────────────────────────');
@@ -1198,14 +1198,14 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('');
   // Region filter
   if(regions==='promoter'){
-    p('# Filter: promoter-proximal probes (TSS200, TSS1500, 1stExon)');
-    p('keep_region <- grepl("TSS200|TSS1500|1stExon", anno$UCSC_RefGene_Group)');
+    p('# Filter: promoter-proximal probes (TSS200, TSS1500, 5\'UTR, 1stExon)');
+    p('keep_region <- grepl("TSS200|TSS1500|5\'UTR|1stExon", anno$UCSC_RefGene_Group)');
   } else if(regions==='body'){
     p('# Filter: gene body probes only (Body)');
     p('keep_region <- grepl("\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
   } else if(regions==='promoter_body'){
-    p('# Filter: promoter + gene body probes');
-    p('keep_region <- grepl("TSS200|TSS1500|1stExon|\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
+    p('# Filter: promoter + gene body probes (TSS200, TSS1500, 5\'UTR, 1stExon, Body)');
+    p('keep_region <- grepl("TSS200|TSS1500|5\'UTR|1stExon|\\\\bBody\\\\b", anno$UCSC_RefGene_Group)');
   } else {
     p('# Filter: all probes with any gene annotation');
     p('keep_region <- !is.na(anno$UCSC_RefGene_Name) & anno$UCSC_RefGene_Name != ""');
@@ -1583,26 +1583,26 @@ function onAskRegions() {
     'Only probes mapped to the selected regions will contribute to each gene\'s summary score.</p>');
   showOptCards([
     {
-      label: 'All annotated probes',
+      label: 'Promoter regions (TSS200, TSS1500, 5\'UTR, 1stExon)',
       tag: 'Recommended',
       recommended: true,
-      desc: 'Include every probe assigned to any gene region (TSS200, TSS1500, 1stExon, Body, 5\'UTR, 3\'UTR). Best for exploratory analyses where broad genome-wide coverage is desired.',
-      fn: function() { onRegionChoice('all'); }
-    },
-    {
-      label: 'Promoter regions (TSS200, TSS1500, 1stExon)',
-      desc: 'Restrict to probes near the transcription start site and first exon. Promoter methylation is the most characterised mechanism of gene silencing and is the standard choice for differential methylation studies.',
+      desc: 'Probes near the transcription start site, 5\'UTR, and first exon. Promoter methylation is the most established mechanism of transcriptional silencing and the standard choice for differential methylation and gene-expression association studies.',
       fn: function() { onRegionChoice('promoter'); }
     },
     {
+      label: 'Promoter + Gene body (TSS200, TSS1500, 5\'UTR, 1stExon, Body)',
+      desc: 'Combines promoter-proximal and gene body probes for a comprehensive per-gene summary. Useful when you want to capture both regulatory (silencing) and coding-region (activation) signals in a single value.',
+      fn: function() { onRegionChoice('promoter_body'); }
+    },
+    {
       label: 'Gene body only (Body)',
-      desc: 'Restrict to probes within the transcribed gene body. Gene body methylation is positively correlated with expression and is increasingly important in cancer, development, and alternative splicing research.',
+      desc: 'Probes within the transcribed region only. Gene body methylation is positively correlated with expression and is particularly relevant in studies of cancer, development, and alternative splicing.',
       fn: function() { onRegionChoice('body'); }
     },
     {
-      label: 'Promoter + Gene body (TSS200, TSS1500, 1stExon, Body)',
-      desc: 'Combine promoter-proximal and gene body probes. A comprehensive per-gene summary useful when you want to capture both regulatory (silencing) and coding-region (activation) methylation in a single value.',
-      fn: function() { onRegionChoice('promoter_body'); }
+      label: 'All annotated probes',
+      desc: 'Every probe assigned to any gene region (TSS200, TSS1500, 5\'UTR, 1stExon, Body, 3\'UTR). Best for broad exploratory analyses where maximum coverage is preferred over mechanistic specificity.',
+      fn: function() { onRegionChoice('all'); }
     },
   ]);
 }
@@ -1611,7 +1611,7 @@ function onRegionChoice(region) {
   S.regions = region;
   var labels = {
     all:           'All annotated probes',
-    promoter:      'Promoter regions (TSS200, TSS1500, 1stExon)',
+    promoter:      'Promoter regions (TSS200, TSS1500, 5\'UTR, 1stExon)',
     body:          'Gene body only (Body)',
     promoter_body: 'Promoter + Gene body',
   };
@@ -1671,7 +1671,7 @@ function showScript() {
 
   var regionLabels = {
     all:           'all annotated probes',
-    promoter:      'promoter regions (TSS200, TSS1500, 1stExon)',
+    promoter:      'promoter regions (TSS200, TSS1500, 5\'UTR, 1stExon)',
     body:          'gene body (Body)',
     promoter_body: 'promoter + gene body',
   };
