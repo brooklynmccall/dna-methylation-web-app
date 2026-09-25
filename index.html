@@ -237,6 +237,10 @@ main { max-width: 680px; margin: 0 auto; }
   background: var(--surface-alt); border: 1px solid var(--border);
   color: var(--text-2); margin: 4px 0;
 }
+.file-badge--lg {
+  font-size: 13px; padding: 5px 13px; border-radius: 8px; gap: 7px;
+  color: var(--text); border-color: var(--accent); font-weight: 500;
+}
 
 /* ── Preview block ── */
 .preview {
@@ -424,6 +428,27 @@ function esc(s) {
 }
 function scrollBot() {
   setTimeout(function(){ window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }, 60);
+}
+// Align tab-separated lines into fixed-width columns for <pre> display
+function alignTsv(lines, maxRows) {
+  var rows = (maxRows ? lines.slice(0, maxRows) : lines)
+    .map(function(l){ return l.split('\t').map(function(c){ return c.replace(/^"+|"+$/g,'').trim(); }); });
+  var widths = [];
+  rows.forEach(function(cols){
+    cols.forEach(function(cell, ci){
+      if (!widths[ci] || cell.length > widths[ci]) widths[ci] = cell.length;
+    });
+  });
+  return rows.map(function(cols){
+    return cols.map(function(cell, ci){
+      // Last column: no padding needed
+      if (ci === cols.length - 1) return cell;
+      var w = widths[ci] || 0;
+      var s = cell;
+      while (s.length < w) s += ' ';
+      return s;
+    }).join('  ');
+  }).join('\n');
 }
 function revealChat() {
   chatStage.classList.add('show');
@@ -1526,18 +1551,19 @@ function onFilesReady(matrixLines, sigLines) {
   if(idatAvail&&S.signalFile){
     var fd=fmtLabels[S.signalFmt]||'';
     parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> and a signal table:</p>');
-    parts.push('<p style="margin:4px 0 2px;"><span class="file-badge">📄 '+esc(S.signalFile)+'</span></p>');
+    parts.push('<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
-      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(alignTsv(sigLines,6))+'</pre></div>');
     if(fd) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>');
     parts.push('<p style="margin-top:8px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?</p>');
   } else if(idatAvail){
     parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>. Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
   } else if(S.signalFile){
     var fd2=fmtLabels[S.signalFmt]||'';
-    parts.push('<p style="margin-top:12px;">I found a signal table file: <span class="file-badge">📄 '+esc(S.signalFile)+'</span></p>');
+    parts.push('<p style="margin-top:12px;">I found a signal table file:</p>');
+    parts.push('<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
-      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(sigLines.slice(0,6).join('\n'))+'</pre></div>');
+      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(alignTsv(sigLines,6))+'</pre></div>');
     if(fd2) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;">Detected format: '+esc(fd2)+'</em></p>');
     parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from this file?</p>');
   } else {
