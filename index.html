@@ -429,30 +429,29 @@ function esc(s) {
 function scrollBot() {
   setTimeout(function(){ window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }, 60);
 }
-// Render tab-separated lines as an aligned HTML table inside a scroll container
-function sigPreviewTable(lines, maxRows) {
+// Align delimited lines into fixed-width columns for <pre> display (auto-detects CSV vs TSV)
+function alignDelimited(lines, maxRows) {
+  var sample = lines[0] || '';
+  var sep = (sample.split('\t').length > sample.split(',').length) ? '\t' : ',';
   var rows = (maxRows ? lines.slice(0, maxRows) : lines)
-    .map(function(l){ return l.replace(/\r$/,'').split('\t').map(function(c){ return c.replace(/^"+|"+$/g,'').trim(); }); })
-    .filter(function(r){ return r.length > 1 || (r.length === 1 && r[0]); });
-  if (!rows.length) return '';
-  var header = rows[0];
-  var body = rows.slice(1);
-  var MAX_COLS = 8; // cap visible columns so the table doesn't sprawl
-  var showCols = Math.min(header.length, MAX_COLS);
-  var moreCols = header.length - showCols;
-  var thead = '<thead><tr>';
-  for (var ci = 0; ci < showCols; ci++) thead += '<th class="char-th">' + esc(header[ci]) + '</th>';
-  if (moreCols > 0) thead += '<th class="char-th" style="font-style:italic;font-weight:400;">+' + moreCols + ' more…</th>';
-  thead += '</tr></thead>';
-  var tbody = '<tbody>';
-  body.forEach(function(cols){
-    tbody += '<tr>';
-    for (var ci2 = 0; ci2 < showCols; ci2++) tbody += '<td>' + esc(cols[ci2] || '') + '</td>';
-    if (moreCols > 0) tbody += '<td style="color:var(--text-2);font-style:italic;"></td>';
-    tbody += '</tr>';
+    .map(function(l){
+      return l.replace(/\r$/,'').split(sep).map(function(c){ return c.replace(/^"+|"+$/g,'').trim(); });
+    });
+  var widths = [];
+  rows.forEach(function(cols){
+    cols.forEach(function(cell, ci){
+      if (!widths[ci] || cell.length > widths[ci]) widths[ci] = cell.length;
+    });
   });
-  tbody += '</tbody>';
-  return '<div class="tbl-scroll" style="margin-top:4px;max-height:180px;"><table class="sample-char-tbl">' + thead + tbody + '</table></div>';
+  return rows.map(function(cols){
+    return cols.map(function(cell, ci){
+      if (ci === cols.length - 1) return cell;
+      var w = widths[ci] || 0;
+      var s = cell;
+      while (s.length < w) s += ' ';
+      return s;
+    }).join('  ');
+  }).join('\n');
 }
 function revealChat() {
   chatStage.classList.add('show');
@@ -1557,7 +1556,7 @@ function onFilesReady(matrixLines, sigLines) {
     parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> and a signal table:</p>');
     parts.push('<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
-      parts.push(sigPreviewTable(sigLines,7));
+      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(sigLines,6))+'</pre></div>');
     if(fd) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>');
     parts.push('<p style="margin-top:8px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?</p>');
   } else if(idatAvail){
@@ -1567,7 +1566,7 @@ function onFilesReady(matrixLines, sigLines) {
     parts.push('<p style="margin-top:12px;">I found a signal table file:</p>');
     parts.push('<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
-      parts.push(sigPreviewTable(sigLines,7));
+      parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(sigLines,6))+'</pre></div>');
     if(fd2) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;">Detected format: '+esc(fd2)+'</em></p>');
     parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from this file?</p>');
   } else {
