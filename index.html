@@ -715,22 +715,25 @@ function detectSigFmt(lines) {
     var l=lines[i].trim(); if(!l||l[0]==='#') continue;
     if(!found){header=l;found=true;}else{second=l;break;}
   }
-  var cols=header.split('\t'), cols2=second?second.split('\t'):[];
+  // Auto-detect delimiter: use tab if present, else comma (CSV)
+  var sep=header.indexOf('\t')>=0 ? '\t' : ',';
+  var cols=header.split(sep).map(function(c){return c.replace(/^"+|"+$/g,'').trim();});
+  var cols2=second ? second.split(sep).map(function(c){return c.replace(/^"+|"+$/g,'').trim();}) : [];
   var sigWords=['methylated','unmethylated','detection','pval','p.value','p-value','signal'];
   if(cols2.some(function(c){return sigWords.some(function(w){return c.toLowerCase().indexOf(w)>=0;});}))
-    return {format:'two_row',header:cols,sigRow:cols2};
+    return {format:'two_row',header:cols,sigRow:cols2,sep:sep};
   if(cols.some(function(c){return /GSM\d+\.(methylated|unmethylated|detection)/i.test(c);}))
-    return {format:'combined',header:cols};
+    return {format:'combined',header:cols,sep:sep};
   if(cols.some(function(c){return /signal[_. ]?[ab]\b/i.test(c);}))
-    return {format:'signal_ab',header:cols};
+    return {format:'signal_ab',header:cols,sep:sep};
   var dataLine='';
   for(var j=1;j<lines.length;j++){var ll=lines[j].trim();if(!ll||ll[0]==='#')continue;dataLine=ll;break;}
   if(dataLine){
-    var dc=dataLine.split('\t').slice(1);
+    var dc=dataLine.split(sep).slice(1).map(function(c){return c.replace(/^"+|"+$/g,'').trim();});
     if(dc.length>0&&dc.every(function(v){var n=parseFloat(v);return !isNaN(n)&&n>=0&&n<=1;}))
-      return {format:'precomputed_beta',header:cols};
+      return {format:'precomputed_beta',header:cols,sep:sep};
   }
-  return {format:'unknown',header:cols};
+  return {format:'unknown',header:cols,sep:sep};
 }
 
 // ── File detection ──
@@ -1222,15 +1225,32 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('');
   p('sample_meta <- pData(gse_obj)');
   p('');
+  p('# ── Align beta_mat columns to sample_meta rows ──────────────────────────');
   p('common <- intersect(rownames(sample_meta), colnames(beta_mat))');
   p('if (length(common) == 0) {');
+  p('  # Attempt 2: extract any GSM accession embedded in column names');
   p('  gsm_in_cols <- regmatches(colnames(beta_mat),');
   p('                             regexpr("GSM[0-9]+", colnames(beta_mat)))');
-  p('  colnames(beta_mat) <- ifelse(nchar(gsm_in_cols)>0, gsm_in_cols, colnames(beta_mat))');
+  p('  if (length(gsm_in_cols) == ncol(beta_mat))');
+  p('    colnames(beta_mat) <- gsm_in_cols');
   p('  common <- intersect(rownames(sample_meta), colnames(beta_mat))');
   p('}');
-  p('sample_meta <- sample_meta[common, , drop = FALSE]');
-  p('beta_mat    <- beta_mat[, common,  drop = FALSE]');
+  p('if (length(common) == 0 && ncol(beta_mat) == nrow(sample_meta)) {');
+  p('  # Attempt 3: positional match (column order matches pData row order)');
+  p('  message("WARNING: Column names in beta_mat do not match GSM accessions. ",');
+  p('          "Assuming positional correspondence.")');
+  p('  colnames(beta_mat) <- rownames(sample_meta)');
+  p('  common <- rownames(sample_meta)');
+  p('}');
+  p('if (length(common) == 0) {');
+  p('  warning("Could not match beta_mat columns to GSM accessions. ",');
+  p('          "beta_mat columns: ", paste(head(colnames(beta_mat),3), collapse=", "),');
+  p('          " | pData rownames: ", paste(head(rownames(sample_meta),3), collapse=", "),');
+  p('          "\\nProceeding with all beta_mat columns — metadata alignment skipped.")');
+  p('} else {');
+  p('  sample_meta <- sample_meta[common, , drop = FALSE]');
+  p('  beta_mat    <- beta_mat[, common,  drop = FALSE]');
+  p('}');
   p('');
   p('# ── 8. Write metadata files ────────────────────────────────────────────');
   p('message("Writing metadata files to: ", output_dir)');
