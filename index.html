@@ -1718,7 +1718,7 @@ function onFilesReady(matrixLines, sigLines) {
       : 'I found a supplementary file that looks like a signal table. Preview it below and confirm if it\'s correct.';
     parts.push('<p style="margin-top:12px;">'+sigIntro2+'</p>');
     parts.push(sigPickerHtml(S.sigCandidates, S.signalFile, sigLines, S.signalFmt));
-    parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from this file?</p>');
+    parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from your selected file?</p>');
   } else {
     parts.push('<p style="margin-top:12px;">I couldn\'t automatically detect supplementary files. Choose which type of script to generate:</p>');
   }
