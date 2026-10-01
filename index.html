@@ -1541,7 +1541,7 @@ function onSigCandidateChange(filename) {
     .then(function(lines){
       var fmtRes=detectSigFmt(lines); S.signalFmt=fmtRes.format;
       var fd=fmtLabels[fmtRes.format]||'';
-      var html='<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(filename)+'</span></p>';
+      var html='';
       if(lines.length>0) html+='<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(lines,6))+'</pre></div>';
       if(fd) html+='<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>';
       wrap.innerHTML=html;
@@ -1681,7 +1681,6 @@ function onFilesReady(matrixLines, sigLines) {
     }
     html += '<div id="sig-preview-wrap">';
     if (selectedFile) {
-      html += '<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(selectedFile)+'</span></p>';
       if (previewLines && previewLines.length > 0)
         html += '<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(previewLines,6))+'</pre></div>';
       if (fd) html += '<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>';
@@ -1700,7 +1699,7 @@ function onFilesReady(matrixLines, sigLines) {
     parts.push(idatFileListHtml());
     parts.push('<p style="margin-top:4px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
   } else if(S.signalFile){
-    parts.push('<p style="margin-top:12px;">I found a signal table file:</p>');
+    parts.push('<p style="margin-top:12px;">This dataset includes a signal table. Select the file you\'d like to use and confirm below:</p>');
     parts.push(sigPickerHtml(S.sigCandidates, S.signalFile, sigLines, S.signalFmt));
     parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from this file?</p>');
   } else {
