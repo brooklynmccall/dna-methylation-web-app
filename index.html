@@ -1560,16 +1560,10 @@ function onSigCandidateChange(filename) {
     .then(function(lines){
       var fmtRes=detectSigFmt(lines); S.signalFmt=fmtRes.format;
       var fd=fmtLabels[fmtRes.format]||'';
-      var headerRows=(S.signalFmt==='two_row')?2:1;
-      var dataFetched=Math.max(0,lines.length-headerRows);
-      var shown=Math.min(dataFetched,6);
       var html='';
-      if(lines.length>0) html+='<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(lines,6))+'</pre></div>';
-      if(dataFetched>shown){
-        var note=lines.length>=50
-          ?'Showing first '+shown+' rows — file contains many more rows (preview limited to 50 lines).'
-          :'Showing '+shown+' of '+dataFetched+' rows.';
-        html+='<p style="margin:4px 0 0;"><em style="font-size:11px;color:var(--text-2);">'+esc(note)+'</em></p>';
+      if(lines.length>0){
+        html+='<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(lines,6))+'</pre></div>';
+        html+='<p style="margin:4px 0 0;"><em style="font-size:11px;color:var(--text-2);">Showing first 6 rows.</em></p>';
       }
       if(fd) html+='<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>';
       wrap.innerHTML=html;
@@ -1675,7 +1669,7 @@ function onFilesReady(matrixLines, sigLines) {
         tbody+='</tr>';
       }
       if(moreN>0){
-        tbody+='<tr class="tbl-more" onclick="expandSampleTbl(this)" title="Click to show all samples"><td colspan="'+(columns.length+1)+'">▾ Show '+moreN+' more sample'+(moreN>1?'s':'')+'</td></tr>';
+        tbody+='<tr class="tbl-more" onclick="expandSampleTbl(this)" title="Click to show all samples"><td colspan="'+(columns.length+1)+'">'+moreN+' more sample'+(moreN>1?'s':'')+'</td></tr>';
       }
       tbody+='</tbody>';
 
@@ -1713,7 +1707,7 @@ function onFilesReady(matrixLines, sigLines) {
     if (selectedFile) {
       if (previewLines && previewLines.length > 0) {
         html += '<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(previewLines,6))+'</pre></div>';
-        html += sigRowCountNote(previewLines, 50);
+        if (previewLines.length > 0) html += '<p style="margin:4px 0 0;"><em style="font-size:11px;color:var(--text-2);">Showing first 6 rows.</em></p>';
       }
       if (fd) html += '<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>';
     }
@@ -1721,22 +1715,6 @@ function onFilesReady(matrixLines, sigLines) {
     return html;
   }
 
-  // Return an italicised note about how many rows are in the file vs how many are shown.
-  // headerRows: estimated number of header lines (1 for most formats, 2 for two_row).
-  function sigRowCountNote(fetchedLines, fetchLimit) {
-    var headerRows = (S.signalFmt === 'two_row') ? 2 : 1;
-    var dataFetched = Math.max(0, fetchedLines.length - headerRows);
-    var shown = Math.min(dataFetched, 6);
-    if (dataFetched <= shown) return ''; // nothing extra to mention
-    var note;
-    if (fetchedLines.length >= fetchLimit) {
-      note = 'Showing first '+shown+' rows — file contains many more rows (preview limited to '+fetchLimit+' lines).';
-    } else {
-      var total = dataFetched;
-      note = 'Showing '+shown+' of '+total+' rows.';
-    }
-    return '<p style="margin:4px 0 0;"><em style="font-size:11px;color:var(--text-2);">'+esc(note)+'</em></p>';
-  }
 
   if(idatAvail&&S.signalFile){
     var recName=S.signalFile;
