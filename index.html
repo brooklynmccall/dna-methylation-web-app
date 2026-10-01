@@ -260,6 +260,12 @@ main { max-width: 680px; margin: 0 auto; }
 .sample-char-tbl tbody tr:hover td { background: var(--surface-alt); }
 .gsm-code { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent-text); }
 .tbl-more { text-align: center !important; color: var(--text-2) !important; font-style: italic; padding: 6px 10px !important; }
+/* ── IDAT file list ── */
+.idat-file-list { max-height: 130px; overflow-y: auto; margin: 6px 0 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-alt); padding: 6px 10px; }
+.idat-file-list ul { margin: 0; padding: 0; list-style: none; }
+.idat-file-list li { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text); padding: 2px 0; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.idat-file-list li:last-child { border-bottom: none; }
+.idat-file-list-label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
 
 /* ── Output list ── */
 .out-list { list-style: none; margin-top: 8px; }
@@ -411,7 +417,7 @@ var GPL_NAME = {
 var S = {
   phase:'IDLE', gseId:null, ncbiMeta:null, matMeta:null,
   signalFile:null, signalFmt:null, fileChoice:null, rScript:null,
-  regions:null, aggFunc:null,
+  regions:null, aggFunc:null, dirFiles:[],
 };
 
 var chatMessages = document.getElementById('chat-messages');
@@ -739,6 +745,30 @@ function detectSigFmt(lines) {
 // ── File detection ──
 function hasIdat(files) {
   return files.some(function(f){return /\.idat(\.gz)?$/i.test(f)||/\bidat\b/i.test(f);});
+}
+
+// Collect IDAT filenames from the series matrix lines and/or the FTP dir listing
+function collectIdatNames(matrixLines, dirFiles) {
+  var seen = {}, names = [];
+  function add(name) {
+    var base = name.split('/').pop().replace(/^"+|"+$/g,'').trim();
+    if (base && /\.idat(\.gz)?$/i.test(base) && !seen[base]) {
+      seen[base] = true;
+      names.push(base);
+    }
+  }
+  // From !Sample_supplementary_file rows in the matrix (one URL per sample per row)
+  if (matrixLines) {
+    matrixLines.forEach(function(line) {
+      if (!/^!Sample_supplementary_file/i.test(line)) return;
+      var ti = line.indexOf('\t');
+      if (ti < 0) return;
+      line.slice(ti+1).split('\t').forEach(add);
+    });
+  }
+  // From FTP dir listing (catches cases where matrix wasn't fetched)
+  if (dirFiles) dirFiles.forEach(add);
+  return names;
 }
 function findSigFile(files) {
   var txt=files.filter(function(f){return /\.(txt|csv|tsv)(\.gz)?$/i.test(f)&&!/_series_matrix/i.test(f);});
@@ -1371,7 +1401,7 @@ function doStartOver() {
   addMsg('user','Start over');
   S={phase:'IDLE',gseId:null,ncbiMeta:null,matMeta:null,
      signalFile:null,signalFmt:null,fileChoice:null,rScript:null,
-     regions:null,aggFunc:null};
+     regions:null,aggFunc:null,dirFiles:[]};
   // Hide chat, unlock input
   chatStage.classList.remove('visible');
   setTimeout(function(){
@@ -1459,11 +1489,10 @@ function onStudyYes() {
       S.matMeta=parseMatrix(lines);
       // 1st pass: NCBI suppFiles list
       var sigFilename=findSigFile(suppFiles);
-      // 2nd pass: FTP directory listing (more complete)
-      if(!sigFilename){
-        var dirFiles=await fetchSuppDir(S.gseId);
-        if(dirFiles.length) sigFilename=findSigFile(dirFiles);
-      }
+      // 2nd pass: FTP directory listing (always fetch — gives real filenames for display)
+      var dirFiles=await fetchSuppDir(S.gseId);
+      S.dirFiles=dirFiles;
+      if(!sigFilename&&dirFiles.length) sigFilename=findSigFile(dirFiles);
       S.signalFile=sigFilename;
       if(sigFilename){
         return fetchLines(suppUrl(S.gseId,sigFilename),12)
@@ -1476,10 +1505,9 @@ function onStudyYes() {
     .catch(async function(err){
       console.warn('[MS] matrix fetch failed:',err.message);
       var sigFilename=findSigFile(suppFiles);
-      if(!sigFilename){
-        var dirFiles=await fetchSuppDir(S.gseId);
-        if(dirFiles.length) sigFilename=findSigFile(dirFiles);
-      }
+      var dirFiles=await fetchSuppDir(S.gseId);
+      S.dirFiles=dirFiles;
+      if(!sigFilename&&dirFiles.length) sigFilename=findSigFile(dirFiles);
       S.signalFile=sigFilename;
       ty.remove(); onFilesReady(null,null);
     });
@@ -1588,17 +1616,29 @@ function onFilesReady(matrixLines, sigLines) {
     }
   }
 
+  // ── IDAT file name list ──────────────────────────────────────────────────
+  var idatNames = collectIdatNames(matrixLines, S.dirFiles);
+  function idatFileListHtml() {
+    if (!idatNames.length) return '';
+    var items = idatNames.map(function(n){ return '<li title="'+esc(n)+'">'+esc(n)+'</li>'; }).join('');
+    return '<p class="idat-file-list-label" style="margin-top:8px;">IDAT files ('+idatNames.length+')</p>'
+         + '<div class="idat-file-list"><ul>'+items+'</ul></div>';
+  }
+
   var fmtLabels={two_row:'two-row header (row 1: GSM IDs, row 2: signal type labels)',combined:'combined column names (e.g. GSM12345.Methylated Signal)',signal_ab:'Signal_A / Signal_B format (Cy3 / Cy5 channels)',precomputed_beta:'pre-computed beta values (already normalized 0–1)',unknown:'unrecognized format — will attempt auto-detection'};
   if(idatAvail&&S.signalFile){
     var fd=fmtLabels[S.signalFmt]||'';
     parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> and a signal table:</p>');
+    parts.push(idatFileListHtml());
     parts.push('<p style="margin:4px 0 2px;"><span class="file-badge file-badge--lg">📄 '+esc(S.signalFile)+'</span></p>');
     if(sigLines&&sigLines.length>0)
       parts.push('<div class="preview" style="margin-top:4px;"><pre>'+esc(alignDelimited(sigLines,6))+'</pre></div>');
     if(fd) parts.push('<p style="margin:6px 0 0;"><em style="font-size:12px;color:var(--text-2);">Signal table format: '+esc(fd)+'</em></p>');
     parts.push('<p style="margin-top:8px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?</p>');
   } else if(idatAvail){
-    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>. Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
+    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>:</p>');
+    parts.push(idatFileListHtml());
+    parts.push('<p style="margin-top:4px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
   } else if(S.signalFile){
     var fd2=fmtLabels[S.signalFmt]||'';
     parts.push('<p style="margin-top:12px;">I found a signal table file:</p>');
