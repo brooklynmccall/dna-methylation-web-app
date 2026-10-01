@@ -776,12 +776,20 @@ function collectIdatNames(matrixLines, dirFiles) {
   if (dirFiles) dirFiles.forEach(add);
   return names;
 }
-// Returns ALL candidate signal-table filenames, best matches first
+// Returns ALL candidate signal-table filenames, best matches first.
+// Tier 1 — raw signal/intensity files (most useful; these feed normalization)
+// Tier 2 — general data/matrix files (ambiguous but plausible)
+// Tier 3 — pre-computed beta/average files (already processed; less preferred)
+// Tier 4 — other .txt/.csv/.tsv files
 function findSigFiles(files) {
   var txt=files.filter(function(f){return /\.(txt|csv|tsv)(\.gz)?$/i.test(f)&&!/_series_matrix/i.test(f);});
-  var pref=txt.filter(function(f){return /(signal|beta|data|matrix|methylat)/i.test(f);});
-  var rest=txt.filter(function(f){return !/(signal|beta|data|matrix|methylat)/i.test(f);});
-  return pref.concat(rest);
+  var t1=txt.filter(function(f){return /(signal|intensit|raw|_meth|unmeth)/i.test(f);});
+  var t3=txt.filter(function(f){return /(average.?beta|avg.?beta|preprocess|normalized|norm_beta)/i.test(f);});
+  var t2=txt.filter(function(f){
+    return !t1.includes(f)&&!t3.includes(f)&&/(data|matrix|methylat|beta)/i.test(f);
+  });
+  var t4=txt.filter(function(f){return !t1.includes(f)&&!t2.includes(f)&&!t3.includes(f);});
+  return t1.concat(t2,t3,t4);
 }
 function findSigFile(files) { return findSigFiles(files)[0]||null; }
 function runTimeEst(n,type,idat) {
@@ -1690,8 +1698,13 @@ function onFilesReady(matrixLines, sigLines) {
   }
 
   if(idatAvail&&S.signalFile){
-    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> and a signal table:</p>');
+    var recName=S.signalFile;
+    var sigIntro=S.sigCandidates.length>1
+      ? 'This dataset also includes supplementary signal table files. Based on the filename, <strong>'+esc(recName)+'</strong> looks most likely to contain raw signal intensities — but you can select any file below to preview it first.'
+      : 'This dataset also includes a signal table file.';
+    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>:</p>');
     parts.push(idatFileListHtml());
+    parts.push('<p style="margin-top:10px;">'+sigIntro+'</p>');
     parts.push(sigPickerHtml(S.sigCandidates, S.signalFile, sigLines, S.signalFmt));
     parts.push('<p style="margin-top:8px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?</p>');
   } else if(idatAvail){
@@ -1699,7 +1712,11 @@ function onFilesReady(matrixLines, sigLines) {
     parts.push(idatFileListHtml());
     parts.push('<p style="margin-top:4px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
   } else if(S.signalFile){
-    parts.push('<p style="margin-top:12px;">This dataset includes a signal table. Select the file you\'d like to use and confirm below:</p>');
+    var recName2=S.signalFile;
+    var sigIntro2=S.sigCandidates.length>1
+      ? 'I found several supplementary files. Based on the filename, <strong>'+esc(recName2)+'</strong> looks most likely to contain raw signal intensities — but you can select any file below to preview it and confirm before proceeding.'
+      : 'I found a supplementary file that looks like a signal table. Preview it below and confirm if it\'s correct.';
+    parts.push('<p style="margin-top:12px;">'+sigIntro2+'</p>');
     parts.push(sigPickerHtml(S.sigCandidates, S.signalFile, sigLines, S.signalFmt));
     parts.push('<p style="margin-top:8px;">Should I write a script to compute beta values from this file?</p>');
   } else {
