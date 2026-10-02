@@ -423,7 +423,7 @@ var GPL_NAME = {
 var S = {
   phase:'IDLE', gseId:null, ncbiMeta:null, matMeta:null,
   signalFile:null, signalFmt:null, fileChoice:null, rScript:null,
-  regions:null, aggFunc:null, dirFiles:[], sigCandidates:[],
+  regions:null, aggFunc:null, betaLevel:null, dirFiles:[], sigCandidates:[],
 };
 
 var chatMessages = document.getElementById('chat-messages');
@@ -820,7 +820,7 @@ function runTimeEst(n,type,idat) {
 }
 
 // ── R Script — IDAT path ──
-function buildIdatScript(gse,arr,n,regions,aggFunc) {
+function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   var normFn=arr==='27K'?'preprocessQuantile':'preprocessFunnorm';
   // Each array type needs its own Bioconductor manifest + annotation package
   var manifestPkg = arr==='27K'  ? 'IlluminaHumanMethylation27kmanifest'  :
@@ -839,7 +839,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('# Samples:  '+(n||'unknown'));
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
-  p('#           '+gse+'_methylation_values.tsv  (gene-level)');
+  p('#           '+gse+'_methylation_values.tsv  ('+(betaLevel==='probe'?'probe-level':'gene-level')+')');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
@@ -847,14 +847,14 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('  install.packages("BiocManager")');
   p('BiocManager::install(');
   p('  c("minfi", "GEOquery",');
-  p('    "'+manifestPkg+'",   # array manifest (required by minfi)');
-  p('    "'+annotPkg+'"  # probe annotations');
+  p('    "'+manifestPkg+'"'+(betaLevel!=='probe'?',':'')+' # array manifest (required by minfi)');
+  if(betaLevel!=='probe') p('    "'+annotPkg+'"  # probe annotations for gene-level aggregation');
   p('  ),');
   p('  ask = FALSE, update = FALSE');
   p(')');
   p('if (!requireNamespace("R.utils", quietly = TRUE)) install.packages("R.utils")');
   p('');p('library(minfi)');p('library(GEOquery)');p('library(R.utils)');
-  p('library('+annotPkg+')');
+  if(betaLevel!=='probe') p('library('+annotPkg+')');
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
   p('gse_id          <- "'+gse+'"');
@@ -985,6 +985,22 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
   p('write.table(sample_out, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
   p('');
+  // ── Output block (probe-level or gene-level) ──
+  if (betaLevel === 'probe') {
+    p('# ── 11. Write probe-level beta values ────────────────────────────────────');
+    p('message("Writing probe-level beta values to: ", output_dir)');
+    p('probe_t   <- as.data.frame(t(beta_mat), check.names = FALSE, stringsAsFactors = FALSE)');
+    p('probe_out <- cbind(GEO_Accession = rownames(probe_t), probe_t)');
+    p('write.table(probe_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
+    p('            file = file.path(output_dir, paste0(gse_id, "_methylation_values.tsv")))');
+    p('');
+    p('message("Done!")');
+    p('message("  ", gse_id, "_series_metadata.tsv")');
+    p('message("  ", gse_id, "_sample_metadata.tsv")');
+    p('message("  ", gse_id, "_methylation_values.tsv  (",');
+    p('        nrow(beta_mat), " probes x ", ncol(beta_mat), " samples)")');
+    return L.join('\n');
+  }
   // ── Gene-level aggregation block ──
   var regionLabel = regions==='promoter'?'Promoter (TSS200, TSS1500, 5\'UTR, 1stExon)':
                     regions==='body'?'Gene body (Body)':
@@ -1082,7 +1098,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc) {
 }
 
 // ── R Script — Signal table path ──
-function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
+function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   var L=[],p=function(s){L.push(s);};
   p('# ═══════════════════════════════════════════════════════════════════');
   p('# MethylScript — DNA Methylation Normalization Pipeline');
@@ -1097,21 +1113,21 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
                                    'IlluminaHumanMethylationEPICanno.ilm10b4.hg19';
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
-  p('#           '+gse+'_methylation_values.tsv  (gene-level)');
+  p('#           '+gse+'_methylation_values.tsv  ('+(betaLevel==='probe'?'probe-level':'gene-level')+')');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
   p('if (!requireNamespace("BiocManager", quietly = TRUE))');
   p('  install.packages("BiocManager")');
   p('BiocManager::install(');
-  p('  c("minfi", "GEOquery",');
-  p('    "'+annotPkgSig+'"  # probe annotations for gene-level aggregation');
+  p('  c("minfi", "GEOquery"'+(betaLevel!=='probe'?',':'')+' ');
+  if(betaLevel!=='probe') p('    "'+annotPkgSig+'"  # probe annotations for gene-level aggregation');
   p('  ),');
   p('  ask = FALSE, update = FALSE');
   p(')');
   p('if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")');
   p('');p('library(minfi)');p('library(GEOquery)');p('library(data.table)');
-  p('library('+annotPkgSig+')');
+  if(betaLevel!=='probe') p('library('+annotPkgSig+')');
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
   p('gse_id          <- "'+gse+'"');
@@ -1308,6 +1324,22 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc) {
   p('write.table(sample_out, sep="\\t", row.names=FALSE, quote=FALSE,');
   p('            file=file.path(output_dir, paste0(gse_id,"_sample_metadata.tsv")))');
   p('');
+  // ── Output block (probe-level or gene-level) ──
+  if (betaLevel === 'probe') {
+    p('# ── 9. Write probe-level beta values ─────────────────────────────────────');
+    p('message("Writing probe-level beta values to: ", output_dir)');
+    p('probe_t   <- as.data.frame(t(beta_mat), check.names = FALSE, stringsAsFactors = FALSE)');
+    p('probe_out <- cbind(GEO_Accession = rownames(probe_t), probe_t)');
+    p('write.table(probe_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
+    p('            file = file.path(output_dir, paste0(gse_id, "_methylation_values.tsv")))');
+    p('');
+    p('message("Done!")');
+    p('message("  ", gse_id, "_series_metadata.tsv")');
+    p('message("  ", gse_id, "_sample_metadata.tsv")');
+    p('message("  ", gse_id, "_methylation_values.tsv  (",');
+    p('        nrow(beta_mat), " probes x ", ncol(beta_mat), " samples)")');
+    return L.join('\n');
+  }
   // ── Gene-level aggregation block (signal path) ──
   var regionLabelSig = regions==='promoter'?'Promoter (TSS200, TSS1500, 5\'UTR, 1stExon)':
                        regions==='body'?'Gene body (Body)':
@@ -1418,7 +1450,7 @@ function doStartOver() {
   addMsg('user','Start over');
   S={phase:'IDLE',gseId:null,ncbiMeta:null,matMeta:null,
      signalFile:null,signalFmt:null,fileChoice:null,rScript:null,
-     regions:null,aggFunc:null,dirFiles:[],sigCandidates:[]};
+     regions:null,aggFunc:null,betaLevel:null,dirFiles:[],sigCandidates:[]};
   // Hide chat, unlock input
   chatStage.classList.remove('visible');
   setTimeout(function(){
@@ -1755,7 +1787,7 @@ function onFileChoice(choice) {
   S.fileChoice=choice;
   addMsg('user','✓ '+(choice==='idat'?'IDAT files':'signal table'));
   clearPanel();
-  setTimeout(function(){ onAskRegions(); }, 400);
+  setTimeout(function(){ onAskBetaLevel(); }, 400);
 }
 
 function showFilenamePrompt() {
@@ -1802,6 +1834,38 @@ function showFilenamePrompt() {
   chatMessages.appendChild(row);
   scrollBot();
   inp.focus();
+}
+
+function onAskBetaLevel() {
+  S.phase = 'ASK_BETA_LEVEL';
+  addMsg('system',
+    '<p>Should the output contain <strong>probe-level</strong> or <strong>gene-level</strong> beta values?</p>');
+  showOptCards([
+    {
+      label: 'Gene level',
+      tag: 'Recommended',
+      recommended: true,
+      desc: 'Probe beta values are aggregated to a single score per gene. Reduces dimensionality, improves interpretability, and is the standard input for downstream analyses such as differential methylation and gene-expression correlation.',
+      fn: function() { onBetaLevelChoice('gene'); }
+    },
+    {
+      label: 'Probe level',
+      desc: 'Each CpG probe is kept as its own column. Preserves the full resolution of the array — preferred for probe-level QC, epigenome-wide association studies (EWAS), and cases where per-CpG resolution is required.',
+      fn: function() { onBetaLevelChoice('probe'); }
+    },
+  ]);
+}
+
+function onBetaLevelChoice(level) {
+  S.betaLevel = level;
+  addMsg('user', level === 'gene' ? 'Gene level' : 'Probe level');
+  clearPanel();
+  if (level === 'gene') {
+    setTimeout(function() { onAskRegions(); }, 400);
+  } else {
+    var ty = addTyping();
+    setTimeout(function() { ty.remove(); showScript(); }, 700);
+  }
 }
 
 function onAskRegions() {
@@ -1884,7 +1948,7 @@ function showScript() {
   var n=mat.nSamples||ncbi.nSamples||0;
   var useIdat=S.fileChoice==='idat';
 
-  var script=useIdat?buildIdatScript(gse,arr,n,S.regions,S.aggFunc):buildSigScript(gse,arr,S.signalFmt,S.signalFile,n,S.regions,S.aggFunc);
+  var script=useIdat?buildIdatScript(gse,arr,n,S.regions,S.aggFunc,S.betaLevel):buildSigScript(gse,arr,S.signalFmt,S.signalFile,n,S.regions,S.aggFunc,S.betaLevel);
   S.rScript=script;
 
   var runTime=runTimeEst(n,arr,useIdat);
@@ -1899,9 +1963,12 @@ function showScript() {
     promoter_body: 'promoter + gene body',
   };
   var aggLabels = { mean:'mean', median:'median', pc1:'PC1' };
-  var geneLevelNote = 'Gene-level betas — '+
-    esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
-    esc(aggLabels[S.aggFunc]||'mean');
+  var methylNote = S.betaLevel === 'probe'
+    ? 'Probe-level betas — rows: GEO accessions, columns: CpG probe IDs'
+    : 'Gene-level betas — '+
+      esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
+      esc(aggLabels[S.aggFunc]||'mean');
+  var geneLevelNote = methylNote;
   var html=[
     '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
     '<ul class="out-list">',
