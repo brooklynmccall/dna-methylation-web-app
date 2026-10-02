@@ -376,7 +376,7 @@ main { max-width: 680px; margin: 0 auto; }
   <section id="input-stage">
     <p class="eyebrow">GEO Series ID</p>
     <h1 class="hero-heading">Generate a <strong>methylation pipeline</strong><br>from any GEO dataset</h1>
-    <p class="hero-sub">Enter an Illumina 27K, 450K, or EPIC array series ID to receive<br>a custom, publication-ready R analysis script.</p>
+    <p class="hero-sub">Enter a GEO (Gene Expression Omnibus) series ID for an Illumina methylation array — 27K, 450K, or EPIC — to receive a custom, publication-ready R analysis script.</p>
     <div class="id-widget">
       <span class="id-prefix">GSE</span>
       <input id="series-input" type="text" inputmode="numeric" placeholder="206879"
@@ -1741,13 +1741,13 @@ function onFilesReady(matrixLines, sigLines) {
     var sigIntro=S.sigCandidates.length>1
       ? 'This dataset also includes supplementary signal table files. Based on the filename, <strong>'+esc(recName)+'</strong> looks most likely to contain raw signal intensities — but you can select any file below to preview it first.'
       : 'This dataset also includes a signal table file.';
-    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>:</p>');
+    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> (Illumina intensity data — the unprocessed output from the array scanner):</p>');
     parts.push(idatFileListHtml());
     parts.push('<p style="margin-top:10px;">'+sigIntro+'</p>');
     parts.push(sigPickerHtml(S.sigCandidates, S.signalFile, sigLines, S.signalFmt));
     parts.push('<p style="margin-top:8px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can use the signal table instead. Which would you like to use?</p>');
   } else if(idatAvail){
-    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong>:</p>');
+    parts.push('<p style="margin-top:12px;">This dataset includes raw <strong>IDAT files</strong> (Illumina intensity data — the unprocessed output from the array scanner):</p>');
     parts.push(idatFileListHtml());
     parts.push('<p style="margin-top:4px;">Re-normalizing from IDAT gives the most reproducible beta values, but you can also generate a script for a signal table if you have one. Which would you like to use?</p>');
   } else if(S.signalFile){
@@ -1839,18 +1839,20 @@ function showFilenamePrompt() {
 function onAskBetaLevel() {
   S.phase = 'ASK_BETA_LEVEL';
   addMsg('system',
-    '<p>Should the output contain <strong>probe-level</strong> or <strong>gene-level</strong> beta values?</p>');
+    '<p>Should the output contain <strong>probe-level</strong> or <strong>gene-level</strong> beta values? ' +
+    '(Beta values range from 0 to 1 and measure the fraction of DNA methylation at each CpG site — ' +
+    '0 = unmethylated, 1 = fully methylated.)</p>');
   showOptCards([
     {
       label: 'Gene level',
       tag: 'Recommended',
       recommended: true,
-      desc: 'Probe beta values are aggregated to a single score per gene. Reduces dimensionality, improves interpretability, and is the standard input for downstream analyses such as differential methylation and gene-expression correlation.',
+      desc: 'Individual CpG probe measurements are combined into a single summary score per gene. This reduces the number of variables from hundreds of thousands of probes down to roughly 20,000 genes, improves interpretability, and is the standard input for downstream analyses such as differential methylation testing and gene-expression correlation.',
       fn: function() { onBetaLevelChoice('gene'); }
     },
     {
       label: 'Probe level',
-      desc: 'Each CpG probe is kept as its own column. Preserves the full resolution of the array — preferred for probe-level QC, epigenome-wide association studies (EWAS), and cases where per-CpG resolution is required.',
+      desc: 'Each CpG (cytosine-phosphate-guanine) site is kept as its own column in the output, preserving the full resolution of the array. Preferred for quality control (QC), epigenome-wide association studies (EWAS), and cases where per-site resolution is required. Downside: produces hundreds of thousands of columns — one per CpG probe — resulting in very large output files that most standard analysis tools are not designed to handle directly.',
       fn: function() { onBetaLevelChoice('probe'); }
     },
   ]);
@@ -1872,23 +1874,25 @@ function onAskRegions() {
   S.phase = 'ASK_REGIONS';
   addMsg('system',
     '<p>Which <strong>genomic regions</strong> should be included when computing gene-level methylation? ' +
-    'Only probes mapped to the selected regions will contribute to each gene\'s summary score.</p>');
+    'Methylation arrays cover different parts of each gene — the promoter, gene body, and other regions — ' +
+    'and the relationship between methylation and gene expression differs by region. ' +
+    'Only probes in the selected region(s) will contribute to each gene\'s summary score.</p>');
   showOptCards([
     {
       label: 'Promoter regions (TSS200, TSS1500, 5\'UTR, 1stExon)',
       tag: 'Recommended',
       recommended: true,
-      desc: 'Probes near the transcription start site, 5\'UTR, and first exon. Promoter methylation is the most established mechanism of transcriptional silencing and the standard choice for differential methylation and gene-expression association studies.',
+      desc: 'Covers probes within 200 bp (TSS200) and 1,500 bp (TSS1500) of the transcription start site, plus the 5\' untranslated region (5\'UTR) and first exon. Methylation in the promoter is the best-understood mechanism of transcriptional silencing and is the standard choice for differential methylation testing and gene-expression association studies.',
       fn: function() { onRegionChoice('promoter'); }
     },
     {
       label: 'Gene body only (Body)',
-      desc: 'Probes within the transcribed region only. Gene body methylation is positively correlated with expression and is particularly relevant in studies of cancer, development, and alternative splicing.',
+      desc: 'Probes within the transcribed gene body only. Gene body methylation tends to be positively correlated with gene expression — the opposite of promoter methylation — and is relevant to studies of cancer, development, and alternative splicing. Downside: not the standard choice for transcriptional regulation studies; results can be harder to interpret and to compare with published literature, which predominantly reports promoter methylation.',
       fn: function() { onRegionChoice('body'); }
     },
     {
       label: 'All annotated probes',
-      desc: 'Every probe assigned to any gene region (TSS200, TSS1500, 5\'UTR, 1stExon, Body, 3\'UTR). Note: because promoter methylation silences gene expression while gene body methylation is associated with activation, averaging across both regions can produce values that cancel each other out and are difficult to interpret. This option is uncommon in practice and is best reserved for broad exploratory analyses.',
+      desc: 'Every probe assigned to any gene region — TSS200, TSS1500, 5\' untranslated region (5\'UTR), first exon, gene body, and 3\' untranslated region (3\'UTR). Downside: promoter methylation silences expression while gene body methylation is associated with activation, so averaging across all regions can produce scores that partially cancel each other out and are harder to interpret. This option is uncommon in published analyses and is best suited for broad exploratory work.',
       fn: function() { onRegionChoice('all'); }
     },
   ]);
@@ -1921,12 +1925,12 @@ function onAskAggFunc() {
     },
     {
       label: 'Median',
-      desc: 'Use the middle value across probes. More robust than mean when a few probes have outlier beta values (e.g. near-0 or near-1 failures that survived quality filtering).',
+      desc: 'Use the middle value (50th percentile) across all probes for a gene. More resistant to outlier probes — for example, probes with beta values near 0 or 1 that survived quality filtering. Downside: slightly less commonly reported than mean in published methylation analyses, which can make direct cross-study comparisons harder.',
       fn: function() { onAggFuncChoice('median'); }
     },
     {
       label: 'First principal component (PC1)',
-      desc: 'Extract the first PC across probes for each gene. Captures the dominant co-methylation pattern and maximises variance explained. Preferred for genes with many probes showing correlated patterns — but requires ≥2 probes per gene and is slower to compute.',
+      desc: 'Extract the first principal component across all probes for a gene — a weighted combination that captures the dominant pattern of co-methylation and maximises variance explained. Useful when gene probes are highly correlated. Downside: the resulting values are not on the standard 0–1 beta scale, making them harder to interpret biologically; computationally slower than mean or median; requires at least 2 probes per gene (single-probe genes fall back to mean); and rarely reported in published analyses, making cross-study comparisons difficult.',
       fn: function() { onAggFuncChoice('pc1'); }
     },
   ]);
@@ -1964,10 +1968,11 @@ function showScript() {
   };
   var aggLabels = { mean:'mean', median:'median', pc1:'PC1' };
   var methylNote = S.betaLevel === 'probe'
-    ? 'Probe-level betas — rows: GEO accessions, columns: CpG probe IDs'
+    ? 'Probe-level betas — rows: GEO accession IDs (e.g. GSM123456), columns: CpG probe IDs'
     : 'Gene-level betas — '+
       esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
-      esc(aggLabels[S.aggFunc]||'mean');
+      esc(aggLabels[S.aggFunc]||'mean')+
+      ' — rows: GEO accession IDs (e.g. GSM123456), columns: genes';
   var geneLevelNote = methylNote;
   var html=[
     '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
@@ -1977,10 +1982,10 @@ function showScript() {
     '<div class="out-desc">Series-level metadata from GEO</div></div></li>',
     '<li><span class="out-num">2</span><div>',
     '<div class="out-fname">'+esc(gse+'_sample_metadata.tsv')+'</div>',
-    '<div class="out-desc">Sample phenotype / annotation table — rows: GEO accessions, columns: characteristics</div></div></li>',
+    '<div class="out-desc">Sample phenotype and annotation table — rows: GEO accession IDs (e.g. GSM123456), columns: sample characteristics</div></div></li>',
     '<li><span class="out-num">3</span><div>',
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
-    '<div class="out-desc">'+geneLevelNote+' — rows: GEO accessions, columns: genes</div></div></li>',
+    '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
     '</ul>',
     '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong> <span style="font-weight:400;font-size:12px;">(varies by machine speed and available RAM)</span></p>',
     '<div class="r-wrap">',
