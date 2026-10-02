@@ -384,7 +384,7 @@ main { max-width: 680px; margin: 0 auto; }
         aria-label="GEO Series numeric ID">
       <button class="id-submit" id="id-submit">Analyze →</button>
     </div>
-    <p class="id-hint">Enter the numeric portion of the GSE accession number</p>
+    <p class="id-hint">Enter the numeric portion of the GEO Series (GSE) accession number</p>
     <p class="id-error" id="id-error">Please enter a valid series number — digits only.</p>
   </section>
 
@@ -1840,8 +1840,8 @@ function onAskBetaLevel() {
   S.phase = 'ASK_BETA_LEVEL';
   addMsg('system',
     '<p>Should the output contain <strong>probe-level</strong> or <strong>gene-level</strong> beta values? ' +
-    '(Beta values range from 0 to 1 and measure the fraction of DNA methylation at each CpG site — ' +
-    '0 = unmethylated, 1 = fully methylated.)</p>');
+    '(Beta values range from 0 to 1 and measure the fraction of DNA methylation at each CpG — ' +
+    'cytosine-phosphate-guanine — site across the genome: 0 = unmethylated, 1 = fully methylated.)</p>');
   showOptCards([
     {
       label: 'Gene level',
@@ -1852,7 +1852,7 @@ function onAskBetaLevel() {
     },
     {
       label: 'Probe level',
-      desc: 'Each CpG (cytosine-phosphate-guanine) site is kept as its own column in the output, preserving the full resolution of the array. Preferred for quality control (QC), epigenome-wide association studies (EWAS), and cases where per-site resolution is required. Downside: produces hundreds of thousands of columns — one per CpG probe — resulting in very large output files that most standard analysis tools are not designed to handle directly.',
+      desc: 'Each CpG site is kept as its own column in the output, preserving the full resolution of the array. Preferred for quality control (QC), epigenome-wide association studies (EWAS), and cases where per-site resolution is required. However, this produces hundreds of thousands of columns — one per CpG probe — resulting in very large output files that most standard analysis tools are not designed to handle directly.',
       fn: function() { onBetaLevelChoice('probe'); }
     },
   ]);
@@ -1887,12 +1887,12 @@ function onAskRegions() {
     },
     {
       label: 'Gene body only (Body)',
-      desc: 'Probes within the transcribed gene body only. Gene body methylation tends to be positively correlated with gene expression — the opposite of promoter methylation — and is relevant to studies of cancer, development, and alternative splicing. Downside: not the standard choice for transcriptional regulation studies; results can be harder to interpret and to compare with published literature, which predominantly reports promoter methylation.',
+      desc: 'Probes within the transcribed gene body only. Gene body methylation tends to be positively correlated with gene expression — the opposite of promoter methylation — and is relevant to studies of cancer, development, and alternative splicing. It is not the standard choice for transcriptional regulation studies, and results can be harder to interpret and compare with published literature, which predominantly reports promoter methylation.',
       fn: function() { onRegionChoice('body'); }
     },
     {
       label: 'All annotated probes',
-      desc: 'Every probe assigned to any gene region — TSS200, TSS1500, 5\' untranslated region (5\'UTR), first exon, gene body, and 3\' untranslated region (3\'UTR). Downside: promoter methylation silences expression while gene body methylation is associated with activation, so averaging across all regions can produce scores that partially cancel each other out and are harder to interpret. This option is uncommon in published analyses and is best suited for broad exploratory work.',
+      desc: 'Every probe assigned to any gene region — TSS200, TSS1500, 5\' untranslated region (5\'UTR), first exon, gene body, and 3\' untranslated region (3\'UTR). Because promoter methylation silences expression while gene body methylation is associated with activation, averaging across all regions can produce scores that partially cancel each other out and are harder to interpret. This option is uncommon in published analyses and is best suited for broad exploratory work.',
       fn: function() { onRegionChoice('all'); }
     },
   ]);
@@ -1925,12 +1925,12 @@ function onAskAggFunc() {
     },
     {
       label: 'Median',
-      desc: 'Use the middle value (50th percentile) across all probes for a gene. More resistant to outlier probes — for example, probes with beta values near 0 or 1 that survived quality filtering. Downside: slightly less commonly reported than mean in published methylation analyses, which can make direct cross-study comparisons harder.',
+      desc: 'Use the middle value (50th percentile) across all probes for a gene. More resistant to outlier probes — for example, probes with beta values near 0 or 1 that survived quality filtering. It is slightly less commonly reported than mean in published methylation analyses, which can make direct cross-study comparisons harder.',
       fn: function() { onAggFuncChoice('median'); }
     },
     {
       label: 'First principal component (PC1)',
-      desc: 'Extract the first principal component across all probes for a gene — a weighted combination that captures the dominant pattern of co-methylation and maximises variance explained. Useful when gene probes are highly correlated. Downside: the resulting values are not on the standard 0–1 beta scale, making them harder to interpret biologically; computationally slower than mean or median; requires at least 2 probes per gene (single-probe genes fall back to mean); and rarely reported in published analyses, making cross-study comparisons difficult.',
+      desc: 'Extract the first principal component across all probes for a gene — a weighted combination that captures the dominant pattern of co-methylation and maximises variance explained. Useful when gene probes are highly correlated. The resulting values are not on the standard 0–1 beta scale, making them harder to interpret biologically; this method is also computationally slower than mean or median, requires at least 2 probes per gene (single-probe genes fall back to mean), and is rarely reported in published analyses, making cross-study comparisons difficult.',
       fn: function() { onAggFuncChoice('pc1'); }
     },
   ]);
