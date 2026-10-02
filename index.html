@@ -259,9 +259,7 @@ main { max-width: 680px; margin: 0 auto; }
 .sample-char-tbl tbody tr:last-child td { border-bottom: none; }
 .sample-char-tbl tbody tr:hover td { background: var(--surface-alt); }
 .gsm-code { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent-text); }
-.tbl-more { text-align: center !important; color: var(--accent-text) !important; font-style: italic; padding: 6px 10px !important; cursor: pointer; user-select: none; }
-.tbl-more:hover td, tr.tbl-more:hover td { background: var(--accent-subtle) !important; }
-.sample-row-extra { display: none; }
+.tbl-more { text-align: center !important; color: var(--text-2) !important; font-style: italic; padding: 6px 10px !important; }
 /* ── IDAT file list ── */
 .idat-file-list { max-height: 130px; overflow-y: auto; margin: 6px 0 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-alt); padding: 6px 10px; }
 .idat-file-list ul { margin: 0; padding: 0; list-style: none; }
@@ -1536,15 +1534,6 @@ function onStudyYes() {
     });
 }
 
-// Expand the sample characteristics table to show all hidden rows
-function expandSampleTbl(row) {
-  var tbody = row.parentNode;
-  if (!tbody) return;
-  var hidden = tbody.querySelectorAll('.sample-row-extra');
-  hidden.forEach(function(r) { r.style.display = ''; });
-  row.remove();
-}
-
 // Called when the user picks a different candidate file from the dropdown
 function onSigCandidateChange(filename) {
   S.signalFile = filename;
@@ -1660,16 +1649,15 @@ function onFilesReady(matrixLines, sigLines) {
       thead+='</tr></thead>';
 
       var tbody='<tbody>';
-      for(var si=0;si<gsmIds.length;si++){
-        var extraCls=si>=showN?' class="sample-row-extra"':'';
-        tbody+='<tr'+extraCls+'><td class="gsm-code">'+esc(gsmIds[si])+'</td>';
+      for(var si=0;si<showN;si++){
+        tbody+='<tr><td class="gsm-code">'+esc(gsmIds[si])+'</td>';
         columns.forEach(function(col){
           tbody+='<td>'+(esc(col.values[si]||''))+'</td>';
         });
         tbody+='</tr>';
       }
       if(moreN>0){
-        tbody+='<tr class="tbl-more" onclick="expandSampleTbl(this)" title="Click to show all samples"><td colspan="'+(columns.length+1)+'">'+moreN+' more sample'+(moreN>1?'s':'')+'</td></tr>';
+        tbody+='<tr><td class="tbl-more" colspan="'+(columns.length+1)+'">'+moreN+' more sample'+(moreN>1?'s':'')+'</td></tr>';
       }
       tbody+='</tbody>';
 
