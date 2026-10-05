@@ -219,6 +219,17 @@ main { max-width: 680px; margin: 0 auto; }
 .c-btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
 .c-btn:disabled { opacity: .45; cursor: default; border-color: var(--border); color: var(--text-2); }
 
+/* ── Back button ── */
+.back-row { margin-top: 10px; padding: 0 2px; }
+.back-btn {
+  padding: 6px 14px; border-radius: 99px;
+  border: 1.5px solid var(--border);
+  color: var(--text-2); background: transparent;
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: background .12s, color .12s, border-color .12s;
+}
+.back-btn:hover { background: var(--surface-alt); border-color: var(--text-2); color: var(--text); }
+
 /* ── Sample chips ── */
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
 .chip { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 3px 8px; border-radius: 5px; background: var(--surface-alt); color: var(--text-2); border: 1px solid var(--border); }
@@ -424,7 +435,60 @@ var S = {
   phase:'IDLE', gseId:null, ncbiMeta:null, matMeta:null,
   signalFile:null, signalFmt:null, fileChoice:null, rScript:null,
   regions:null, aggFunc:null, betaLevel:null, dirFiles:[], sigCandidates:[],
+  cachedMatrixLines:null, cachedSigLines:null,
 };
+
+// ── Back-navigation history ──
+var historyStack = [];
+var _backNavig = false;
+
+function pushHistory(resumeFn) {
+  if (_backNavig) return;
+  historyStack.push({
+    chatHtml: chatMessages.innerHTML,
+    s: { phase:S.phase, betaLevel:S.betaLevel, regions:S.regions, aggFunc:S.aggFunc, fileChoice:S.fileChoice },
+    resume: resumeFn,
+  });
+}
+
+function goBack() {
+  if (!historyStack.length) return;
+  historyStack.pop();
+  clearPanel();
+  if (!historyStack.length) {
+    // All the way back — unlock the GSE input
+    S.phase='IDLE'; S.betaLevel=null; S.regions=null; S.aggFunc=null; S.fileChoice=null;
+    chatStage.classList.remove('visible');
+    setTimeout(function(){
+      chatStage.classList.remove('show');
+      chatMessages.innerHTML='';
+      inputStage.classList.remove('locked');
+      seriesInput.disabled=false; idSubmit.disabled=false;
+      seriesInput.value=''; seriesInput.focus();
+    }, 350);
+    return;
+  }
+  var prev = historyStack[historyStack.length - 1];
+  chatMessages.innerHTML = prev.chatHtml;
+  S.phase = prev.s.phase; S.betaLevel = prev.s.betaLevel;
+  S.regions = prev.s.regions; S.aggFunc = prev.s.aggFunc;
+  S.fileChoice = prev.s.fileChoice;
+  _backNavig = true;
+  try { prev.resume(); } finally { _backNavig = false; }
+  scrollBot();
+}
+
+function addBackBtn() {
+  if (!historyStack.length) return;
+  var row = document.createElement('div');
+  row.className = 'back-row';
+  var btn = document.createElement('button');
+  btn.className = 'back-btn';
+  btn.textContent = '← Back';
+  btn.addEventListener('click', goBack);
+  row.appendChild(btn);
+  choicePanel.appendChild(row);
+}
 
 var chatMessages = document.getElementById('chat-messages');
 var choicePanel  = document.getElementById('choice-panel');
@@ -1448,9 +1512,11 @@ function dlScript(content, name) {
 // ── Flow: start over ──
 function doStartOver() {
   addMsg('user','Start over');
+  historyStack=[];
   S={phase:'IDLE',gseId:null,ncbiMeta:null,matMeta:null,
      signalFile:null,signalFmt:null,fileChoice:null,rScript:null,
-     regions:null,aggFunc:null,betaLevel:null,dirFiles:[],sigCandidates:[]};
+     regions:null,aggFunc:null,betaLevel:null,dirFiles:[],sigCandidates:[],
+     cachedMatrixLines:null,cachedSigLines:null};
   // Hide chat, unlock input
   chatStage.classList.remove('visible');
   setTimeout(function(){
@@ -1466,6 +1532,7 @@ function doStartOver() {
 
 // ── Flow handlers ──
 function onGseSubmit(gse) {
+  historyStack=[];
   S.gseId=gse; S.phase='FETCHING_META';
   revealChat();
   addMsg('user','<code>'+esc(gse)+'</code>');
@@ -1492,19 +1559,22 @@ function onGseSubmit(gse) {
 }
 
 function onStudyFetched(meta) {
+  if (meta !== undefined) S.ncbiMeta = meta;
+  var m = S.ncbiMeta;
+  pushHistory(function(){ onStudyFetched(); });
   S.phase='CONFIRM_STUDY';
   var parts = ['<p>I found this study in GEO:</p>'];
   parts.push('<table class="meta-tbl">');
-  parts.push('<tr><td>Title</td><td><strong>'+esc(meta.title)+'</strong></td></tr>');
-  parts.push('<tr><td>Platform</td><td>'+esc(meta.gplName||(meta.gpl?meta.gpl:'—'))+'</td></tr>');
-  if(meta.organism) parts.push('<tr><td>Organism</td><td>'+esc(meta.organism)+'</td></tr>');
-  parts.push('<tr><td>Samples</td><td>'+esc(meta.nSamples>0?meta.nSamples:'—')+'</td></tr>');
-  if(meta.suppFiles.length) parts.push('<tr><td>Supp. files</td><td>'+esc(meta.suppFiles.join(', '))+'</td></tr>');
-  if(meta.pubmed.length) parts.push('<tr><td>PubMed</td><td>'+meta.pubmed.map(function(id){return '<a href="https://pubmed.ncbi.nlm.nih.gov/'+esc(id)+'/" target="_blank">'+esc(id)+'</a>';}).join(', ')+'</td></tr>');
+  parts.push('<tr><td>Title</td><td><strong>'+esc(m.title)+'</strong></td></tr>');
+  parts.push('<tr><td>Platform</td><td>'+esc(m.gplName||(m.gpl?m.gpl:'—'))+'</td></tr>');
+  if(m.organism) parts.push('<tr><td>Organism</td><td>'+esc(m.organism)+'</td></tr>');
+  parts.push('<tr><td>Samples</td><td>'+esc(m.nSamples>0?m.nSamples:'—')+'</td></tr>');
+  if(m.suppFiles.length) parts.push('<tr><td>Supp. files</td><td>'+esc(m.suppFiles.join(', '))+'</td></tr>');
+  if(m.pubmed.length) parts.push('<tr><td>PubMed</td><td>'+m.pubmed.map(function(id){return '<a href="https://pubmed.ncbi.nlm.nih.gov/'+esc(id)+'/" target="_blank">'+esc(id)+'</a>';}).join(', ')+'</td></tr>');
   parts.push('</table>');
 
-  if(meta.summary){
-    var brief = meta.summary.length>300 ? meta.summary.slice(0,300)+'…' : meta.summary;
+  if(m.summary){
+    var brief = m.summary.length>300 ? m.summary.slice(0,300)+'…' : m.summary;
     parts.push('<p style="margin-top:10px;font-size:13px;color:var(--text-2);">'+esc(brief)+'</p>');
   }
   parts.push('<p style="margin-top:10px;">Does this look right?</p>');
@@ -1514,6 +1584,7 @@ function onStudyFetched(meta) {
     {label:'✓  Yes, that\'s right', primary:true, fn:onStudyYes},
     {label:'✗  Wrong study',        fn:onStudyNo},
   ]);
+  addBackBtn();
 }
 
 function onStudyNo() {
@@ -1595,6 +1666,10 @@ function onSigCandidateChange(filename) {
 }
 
 function onFilesReady(matrixLines, sigLines) {
+  if (matrixLines !== undefined) S.cachedMatrixLines = matrixLines;
+  if (sigLines !== undefined) S.cachedSigLines = sigLines;
+  var matrixLines = S.cachedMatrixLines, sigLines = S.cachedSigLines;
+  pushHistory(function(){ onFilesReady(); });
   S.phase='CONFIRM_FILE';
   var meta=S.ncbiMeta||{}, mat=S.matMeta||{};
   var suppFiles=meta.suppFiles||[];
@@ -1775,6 +1850,7 @@ function onFilesReady(matrixLines, sigLines) {
     btns.push({label:'Write signal table script',fn:function(){onFileChoice('signal');}});
   }
   showBtns(btns);
+  addBackBtn();
 }
 
 function onFileChoice(choice) {
@@ -1837,6 +1913,7 @@ function showFilenamePrompt() {
 }
 
 function onAskBetaLevel() {
+  pushHistory(onAskBetaLevel);
   S.phase = 'ASK_BETA_LEVEL';
   addMsg('system',
     '<p>Should the output contain <strong>probe-level</strong> or <strong>gene-level</strong> beta values? ' +
@@ -1856,6 +1933,7 @@ function onAskBetaLevel() {
       fn: function() { onBetaLevelChoice('probe'); }
     },
   ]);
+  addBackBtn();
 }
 
 function onBetaLevelChoice(level) {
@@ -1871,6 +1949,7 @@ function onBetaLevelChoice(level) {
 }
 
 function onAskRegions() {
+  pushHistory(onAskRegions);
   S.phase = 'ASK_REGIONS';
   addMsg('system',
     '<p>Which <strong>genomic regions</strong> should be included when computing gene-level methylation? ' +
@@ -1896,6 +1975,7 @@ function onAskRegions() {
       fn: function() { onRegionChoice('all'); }
     },
   ]);
+  addBackBtn();
 }
 
 function onRegionChoice(region) {
@@ -1911,6 +1991,7 @@ function onRegionChoice(region) {
 }
 
 function onAskAggFunc() {
+  pushHistory(onAskAggFunc);
   S.phase = 'ASK_AGGFUNC';
   addMsg('system',
     '<p>How should probe beta values be <strong>aggregated</strong> into a single gene-level score? ' +
@@ -1934,6 +2015,7 @@ function onAskAggFunc() {
       fn: function() { onAggFuncChoice('pc1'); }
     },
   ]);
+  addBackBtn();
 }
 
 function onAggFuncChoice(func) {
@@ -1946,6 +2028,7 @@ function onAggFuncChoice(func) {
 }
 
 function showScript() {
+  pushHistory(showScript);
   var gse=S.gseId, ncbi=S.ncbiMeta||{}, mat=S.matMeta||{};
   var gpl=(mat.gpl||ncbi.gpl||'').toUpperCase();
   var arr=GPL_TYPE[gpl]||ncbi.arrType||'450K';
@@ -2016,6 +2099,7 @@ function showScript() {
     {label:'⬇  Download '+fname, primary:true, fn:function(){dlScript(script,fname);}},
     {label:'Start over', fn:doStartOver},
   ]);
+  addBackBtn();
   scrollBot();
 }
 
