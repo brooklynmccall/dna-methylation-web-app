@@ -972,6 +972,10 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('# ── 8. Extract beta values ─────────────────────────────────────────────');
   p('message("Extracting beta values...")');
   p('beta_mat <- getBeta(grSet)');
+  p('message("Beta value range check: min=", round(min(beta_mat, na.rm=TRUE), 3),');
+  p('        " mean=", round(mean(beta_mat, na.rm=TRUE), 3),');
+  p('        " max=", round(max(beta_mat, na.rm=TRUE), 3))');
+  p('message("Dimensions: ", nrow(beta_mat), " probes x ", ncol(beta_mat), " samples")');
   p('');
   p('# ── 9. Series & sample metadata ────────────────────────────────────────');
   p('message("Fetching metadata from GEO...")');
@@ -1039,6 +1043,13 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('  sample_meta <- sample_meta[common, , drop = FALSE]');
   p('  beta_mat    <- beta_mat[, common,  drop = FALSE]');
   p('}');
+  p('# Sort columns alphabetically by GSM accession so output order is consistent');
+  p('# across pipeline runs and matches any signal-table output for the same study.');
+  p('o <- order(colnames(beta_mat))');
+  p('beta_mat    <- beta_mat[, o, drop = FALSE]');
+  p('sample_meta <- sample_meta[o, , drop = FALSE]');
+  p('message("Samples (", ncol(beta_mat), "): ", paste(head(colnames(beta_mat), 3), collapse=", "),');
+  p('        if(ncol(beta_mat)>3) paste0(" ... (", ncol(beta_mat)-3, " more)") else "")');
   p('');
   p('# ── 10. Write series & sample metadata ────────────────────────────────────');
   p('message("Writing metadata files to: ", output_dir)');
@@ -1197,13 +1208,13 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('if (!requireNamespace("BiocManager", quietly = TRUE))');
   p('  install.packages("BiocManager")');
   p('BiocManager::install(');
-  p('  c("minfi", "GEOquery"'+(betaLevel!=='probe'?',':'')+' ');
+  p('  c("minfi", "GEOquery", "limma"'+(betaLevel!=='probe'?',':'')+' ');
   if(betaLevel!=='probe') { p('    "'+annotPkgSig+'",  # probe annotations for gene-level aggregation'); p('    "org.Hs.eg.db"   # gene symbol → Entrez ID mapping'); }
   p('  ),');
   p('  ask = FALSE, update = FALSE');
   p(')');
   p('if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")');
-  p('');p('library(minfi)');p('library(GEOquery)');p('library(data.table)');
+  p('');p('library(minfi)');p('library(GEOquery)');p('library(data.table)');p('library(limma)');
   if(betaLevel!=='probe') { p('library('+annotPkgSig+')'); p('library(org.Hs.eg.db)'); }
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
@@ -1311,6 +1322,12 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   if(fmt!=='precomputed_beta'){
     p('');
     p('# ── 5. Compute beta values ───────────────────────────────────────────────');
+    p('# Diagnostic: confirm which columns were detected as methylated/unmethylated');
+    p('message("Detected methylated columns (", length(meth_idx), "): ",');
+    p('        paste(head(colnames(meth_mat), 3), collapse=", "), if(ncol(meth_mat)>3) " ...")');
+    p('message("Detected unmethylated columns (", length(unmeth_idx), "): ",');
+    p('        paste(head(colnames(unmeth_mat), 3), collapse=", "), if(ncol(unmeth_mat)>3) " ...")');
+    p('message("Column counts match: ", ncol(meth_mat) == ncol(unmeth_mat))');
     p('message("Computing beta values...")');
     p('meth_num   <- suppressWarnings(apply(meth_mat,   2, as.numeric))');
     p('unmeth_num <- suppressWarnings(apply(unmeth_mat, 2, as.numeric))');
@@ -1319,6 +1336,9 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('beta_mat <- meth_num / (meth_num + unmeth_num + offset)');
     p('beta_mat[beta_mat < 0] <- 0');
     p('beta_mat[beta_mat > 1] <- 1');
+    p('message("Beta value range check: min=", round(min(beta_mat, na.rm=TRUE), 3),');
+    p('        " mean=", round(mean(beta_mat, na.rm=TRUE), 3),');
+    p('        " max=", round(max(beta_mat, na.rm=TRUE), 3))');
     p('');
     p('# ── 6. Detection p-value filter ──────────────────────────────────────────');
     p('if (!is.null(detP_mat) && ncol(detP_mat) == ncol(beta_mat)) {');
@@ -1336,6 +1356,20 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('}');
   }
 
+  p('');
+  p('# ── 6b. Between-array quantile normalization ─────────────────────────────');
+  p('# The IDAT pipeline applies preprocessFunnorm/preprocessQuantile, which');
+  p('# performs inter-sample normalization. Without this step, raw betas from');
+  p('# the signal table diverge substantially from IDAT-normalized betas.');
+  p('# normalizeBetweenArrays (limma) applies quantile normalization column-wise');
+  p('# across all samples to make the marginal distributions identical.');
+  p('message("Applying between-array quantile normalization (limma)...")');
+  p('beta_mat <- normalizeBetweenArrays(beta_mat, method = "quantile")');
+  p('beta_mat[beta_mat < 0] <- 0');
+  p('beta_mat[beta_mat > 1] <- 1');
+  p('message("Post-normalization beta range: min=", round(min(beta_mat, na.rm=TRUE), 3),');
+  p('        " mean=", round(mean(beta_mat, na.rm=TRUE), 3),');
+  p('        " max=", round(max(beta_mat, na.rm=TRUE), 3))');
   p('');
   p('# ── 7. Series & sample metadata ──────────────────────────────────────────');
   p('message("Fetching metadata from GEO...")');
@@ -1391,6 +1425,13 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('  sample_meta <- sample_meta[common, , drop = FALSE]');
   p('  beta_mat    <- beta_mat[, common,  drop = FALSE]');
   p('}');
+  p('# Sort columns alphabetically by GSM accession so output order is consistent');
+  p('# across pipeline runs and matches any IDAT-based output for the same study.');
+  p('o <- order(colnames(beta_mat))');
+  p('beta_mat    <- beta_mat[, o, drop = FALSE]');
+  p('sample_meta <- sample_meta[o, , drop = FALSE]');
+  p('message("Samples (", ncol(beta_mat), "): ", paste(head(colnames(beta_mat), 3), collapse=", "),');
+  p('        if(ncol(beta_mat)>3) paste0(" ... (", ncol(beta_mat)-3, " more)") else "")');
   p('');
   p('# ── 8. Write metadata files ────────────────────────────────────────────');
   p('message("Writing metadata files to: ", output_dir)');
