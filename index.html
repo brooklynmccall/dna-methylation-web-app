@@ -912,13 +912,13 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('BiocManager::install(');
   p('  c("minfi", "GEOquery",');
   p('    "'+manifestPkg+'"'+(betaLevel!=='probe'?',':'')+' # array manifest (required by minfi)');
-  if(betaLevel!=='probe') p('    "'+annotPkg+'"  # probe annotations for gene-level aggregation');
+  if(betaLevel!=='probe') { p('    "'+annotPkg+'",  # probe annotations for gene-level aggregation'); p('    "org.Hs.eg.db"   # gene symbol → Entrez ID mapping'); }
   p('  ),');
   p('  ask = FALSE, update = FALSE');
   p(')');
   p('if (!requireNamespace("R.utils", quietly = TRUE)) install.packages("R.utils")');
   p('');p('library(minfi)');p('library(GEOquery)');p('library(R.utils)');
-  if(betaLevel!=='probe') p('library('+annotPkg+')');
+  if(betaLevel!=='probe') { p('library('+annotPkg+')'); p('library(org.Hs.eg.db)'); }
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
   p('gse_id          <- "'+gse+'"');
@@ -1147,7 +1147,20 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
     p('rownames(gene_betas) <- all_genes');
   }
   p('');
-  p('# Transpose to tidy format: samples as rows, genes as columns');
+  p('# Map gene symbols to Entrez IDs');
+  p('message("  Mapping gene symbols to Entrez IDs...")');
+  p('entrez_map <- mapIds(org.Hs.eg.db,');
+  p('                     keys      = rownames(gene_betas),');
+  p('                     column    = "ENTREZID",');
+  p('                     keytype   = "SYMBOL",');
+  p('                     multiVals = "first")');
+  p('has_entrez <- !is.na(entrez_map)');
+  p('if (sum(!has_entrez) > 0)');
+  p('  message("  Dropped ", sum(!has_entrez), " genes with no Entrez ID mapping.")');
+  p('gene_betas           <- gene_betas[has_entrez, , drop = FALSE]');
+  p('rownames(gene_betas) <- entrez_map[has_entrez]');
+  p('');
+  p('# Transpose to tidy format: samples as rows, Entrez IDs as columns');
   p('gene_t   <- as.data.frame(t(gene_betas), check.names = FALSE, stringsAsFactors = FALSE)');
   p('gene_out <- cbind(GEO_Accession = rownames(gene_t), gene_t)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
@@ -1157,7 +1170,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('message("  ", gse_id, "_series_metadata.tsv")');
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
-  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " genes)")');
+  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " Entrez IDs)")');
   return L.join('\n');
 }
 
@@ -1185,13 +1198,13 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('  install.packages("BiocManager")');
   p('BiocManager::install(');
   p('  c("minfi", "GEOquery"'+(betaLevel!=='probe'?',':'')+' ');
-  if(betaLevel!=='probe') p('    "'+annotPkgSig+'"  # probe annotations for gene-level aggregation');
+  if(betaLevel!=='probe') { p('    "'+annotPkgSig+'",  # probe annotations for gene-level aggregation'); p('    "org.Hs.eg.db"   # gene symbol → Entrez ID mapping'); }
   p('  ),');
   p('  ask = FALSE, update = FALSE');
   p(')');
   p('if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")');
   p('');p('library(minfi)');p('library(GEOquery)');p('library(data.table)');
-  if(betaLevel!=='probe') p('library('+annotPkgSig+')');
+  if(betaLevel!=='probe') { p('library('+annotPkgSig+')'); p('library(org.Hs.eg.db)'); }
   p('');
   p('# ── 2. Configuration ───────────────────────────────────────────────────');
   p('gse_id          <- "'+gse+'"');
@@ -1485,7 +1498,20 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('rownames(gene_betas) <- all_genes');
   }
   p('');
-  p('# Transpose to tidy format: samples as rows, genes as columns');
+  p('# Map gene symbols to Entrez IDs');
+  p('message("  Mapping gene symbols to Entrez IDs...")');
+  p('entrez_map <- mapIds(org.Hs.eg.db,');
+  p('                     keys      = rownames(gene_betas),');
+  p('                     column    = "ENTREZID",');
+  p('                     keytype   = "SYMBOL",');
+  p('                     multiVals = "first")');
+  p('has_entrez <- !is.na(entrez_map)');
+  p('if (sum(!has_entrez) > 0)');
+  p('  message("  Dropped ", sum(!has_entrez), " genes with no Entrez ID mapping.")');
+  p('gene_betas           <- gene_betas[has_entrez, , drop = FALSE]');
+  p('rownames(gene_betas) <- entrez_map[has_entrez]');
+  p('');
+  p('# Transpose to tidy format: samples as rows, Entrez IDs as columns');
   p('gene_t   <- as.data.frame(t(gene_betas), check.names = FALSE, stringsAsFactors = FALSE)');
   p('gene_out <- cbind(GEO_Accession = rownames(gene_t), gene_t)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
@@ -1495,7 +1521,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('message("  ", gse_id, "_series_metadata.tsv")');
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
-  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " genes)")');
+  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " Entrez IDs)")');
   return L.join('\n');
 }
 
@@ -2055,7 +2081,7 @@ function showScript() {
     : 'Gene-level betas — '+
       esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
       esc(aggLabels[S.aggFunc]||'mean')+
-      ' — rows: GEO accession IDs (e.g. GSM123456), columns: genes';
+      ' — rows: GEO accession IDs (e.g. GSM123456), columns: Entrez gene IDs';
   var geneLevelNote = methylNote;
   var html=[
     '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
