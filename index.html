@@ -1281,7 +1281,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('unmeth_idx <- which(grepl("unmethylated signal", cn, ignore.case=TRUE))');
     p('detP_idx   <- which(grepl("detection|pval|p\\.value", cn, ignore.case=TRUE))');
     p('# Extract sample IDs: strip measurement-type suffix with any common delimiter');
-    p('gsm_ids <- sub("[._:\\s](methylated.*|unmethylated.*|detection.*)$", "",');
+    p('gsm_ids <- sub("[._ :](methylated.*|unmethylated.*|detection.*)$", "",');
     p('               cn[meth_idx], ignore.case=TRUE, perl=TRUE)');
     p('# If that left non-GSM strings, pull the embedded GSM accession directly');
     p('if (!all(grepl("^GSM[0-9]+$", gsm_ids))) {');
@@ -1314,7 +1314,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('unmeth_idx <- which(grepl("Signal_A|sig_a", cn, ignore.case=TRUE))');
     p('detP_idx   <- which(grepl("detection|pval",  cn, ignore.case=TRUE))');
     p('# Extract sample IDs from methylated (Signal_B) column names');
-    p('gsm_ids <- sub("[._:\\s](Signal_A|Signal_B|Detection.*)$", "",');
+    p('gsm_ids <- sub("[._ :](Signal_A|Signal_B|Detection.*)$", "",');
     p('               cn[meth_idx], ignore.case=TRUE, perl=TRUE)');
     p('if (!all(grepl("^GSM[0-9]+$", gsm_ids))) {');
     p('  extracted <- regmatches(cn[meth_idx], regexpr("GSM[0-9]+", cn[meth_idx]))');
@@ -1351,7 +1351,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('stopifnot("Methylated columns not found"   = length(meth_idx)   > 0,');
     p('          "Unmethylated columns not found" = length(unmeth_idx) > 0)');
     p('# Extract sample IDs from column names');
-    p('gsm_ids <- sub("[._:\\s](meth.*|unmeth.*|sig.*|detect.*)$", "",');
+    p('gsm_ids <- sub("[._ :](meth.*|unmeth.*|sig.*|detect.*)$", "",');
     p('               cn[meth_idx], ignore.case=TRUE, perl=TRUE)');
     p('if (!all(grepl("^GSM[0-9]+$", gsm_ids))) {');
     p('  extracted <- regmatches(cn[meth_idx], regexpr("GSM[0-9]+", cn[meth_idx]))');
