@@ -387,7 +387,7 @@ main { max-width: 680px; margin: 0 auto; }
   <section id="input-stage">
     <p class="eyebrow">GEO Series ID</p>
     <h1 class="hero-heading">Generate a <strong>methylation pipeline</strong><br>from any GEO dataset</h1>
-    <p class="hero-sub">Enter a GEO (Gene Expression Omnibus) series ID for an Illumina methylation array — 27K, 450K, or EPIC — to receive a custom, publication-ready R analysis script.</p>
+    <p class="hero-sub">Enter a GEO series ID (for example, <strong>GSE68777</strong>) to generate a ready-to-run R script for that dataset. GEO (Gene Expression Omnibus) is NCBI's public repository for genomics data — you can find a series ID by searching <a href="https://www.ncbi.nlm.nih.gov/geo/" target="_blank">ncbi.nlm.nih.gov/geo</a> or from the accession listed in a paper's data availability section. This tool supports Illumina methylation arrays: 27K, 450K, EPIC, and EPICv2.</p>
     <div class="id-widget">
       <span class="id-prefix">GSE</span>
       <input id="series-input" type="text" inputmode="numeric" placeholder="206879"
@@ -1716,7 +1716,7 @@ function onStudyFetched(meta) {
   var m = S.ncbiMeta;
   pushHistory(function(){ onStudyFetched(); });
   S.phase='CONFIRM_STUDY';
-  var parts = ['<p>I found this study in GEO:</p>'];
+  var parts = ['<p>I found the following study in GEO. Please confirm it\'s the one you want — once confirmed, I\'ll check what data files are available and build your R script.</p>'];
   parts.push('<table class="meta-tbl">');
   parts.push('<tr><td>Title</td><td><strong>'+esc(m.title)+'</strong></td></tr>');
   parts.push('<tr><td>Platform</td><td>'+esc(m.gplName||(m.gpl?m.gpl:'—'))+'</td></tr>');
@@ -2194,40 +2194,40 @@ function showScript() {
   var runTime=runTimeEst(n,arr,useIdat);
   var fname=gse+'_normalize.R';
   var scriptDesc=useIdat
-    ? 'This script downloads the raw IDAT files for <strong>'+esc(gse)+'</strong> from GEO, applies control-probe-based functional normalization, and computes beta values (0–1 methylation estimates) for every sample.'
-    : 'This script downloads the processed signal table for <strong>'+esc(gse)+'</strong> from GEO and computes beta values (β = Methylated ÷ (Methylated + Unmethylated + 100)) directly from the reported intensities.';
+    ? 'This script downloads the raw intensity files (IDATs) for <strong>'+esc(gse)+'</strong> from GEO, removes technical variation between arrays using a normalization step, and calculates a <em>beta value</em> for each CpG site in each sample. Beta values range from 0 (completely unmethylated) to 1 (fully methylated) and represent the fraction of cells in which that DNA position carries a methyl group.'
+    : 'This script downloads the preprocessed signal table for <strong>'+esc(gse)+'</strong> from GEO and calculates a <em>beta value</em> for each CpG site in each sample. Beta values range from 0 (completely unmethylated) to 1 (fully methylated) and are computed from the methylated and unmethylated fluorescence intensities already reported in the file.';
   var probeNote=n>0?('~ probes × '+n+' samples'):'probes × samples';
 
   var regionLabels = {
-    all:           'all annotated probes',
-    promoter:      'promoter regions (TSS200, TSS1500, 5\'UTR, 1stExon)',
-    body:          'gene body (Body)',
-    promoter_body: 'promoter + gene body',
+    all:           'all annotated CpG probes',
+    promoter:      'promoter-region probes (TSS200, TSS1500, 5\'UTR, 1st exon)',
+    body:          'gene-body probes',
+    promoter_body: 'promoter + gene-body probes',
   };
-  var aggLabels = { mean:'mean', median:'median', pc1:'PC1' };
+  var aggLabels = { mean:'mean (average)', median:'median', pc1:'first principal component (PC1)' };
   var methylNote = S.betaLevel === 'probe'
-    ? 'Probe-level betas — rows: GEO accession IDs (e.g. GSM123456), columns: CpG probe IDs'
-    : 'Gene-level betas — '+
-      esc(regionLabels[S.regions]||'all annotated probes')+', aggregated by '+
-      esc(aggLabels[S.aggFunc]||'mean')+
-      ' — rows: GEO accession IDs (e.g. GSM123456), columns: Entrez gene IDs';
+    ? 'One row per sample, one column per CpG probe. Each value is the beta methylation estimate (0–1) for that probe in that sample. Sample IDs are GEO accession codes (e.g. GSM123456); probe IDs match Illumina\'s standard array annotation.'
+    : 'One row per sample, one column per gene (identified by Entrez ID). Each cell holds the '+
+      esc(aggLabels[S.aggFunc]||'mean')+' beta value across '+
+      esc(regionLabels[S.regions]||'all annotated CpG probes')+
+      ' mapped to that gene. Sample IDs are GEO accession codes (e.g. GSM123456).';
   var geneLevelNote = methylNote;
   var html=[
     '<p>'+scriptDesc+' It produces 3 output files:</p>',
     '<ul class="out-list">',
     '<li><span class="out-num">1</span><div>',
     '<div class="out-fname">'+esc(gse+'_series_metadata.tsv')+'</div>',
-    '<div class="out-desc">Series-level metadata from GEO</div></div></li>',
+    '<div class="out-desc">Study-level information from GEO — title, organism, array platform, submission date, PubMed ID, abstract, and overall design. Useful for documenting or citing your analysis.</div></div></li>',
     '<li><span class="out-num">2</span><div>',
     '<div class="out-fname">'+esc(gse+'_sample_metadata.tsv')+'</div>',
-    '<div class="out-desc">Sample phenotype and annotation table — rows: GEO accession IDs (e.g. GSM123456), columns: sample characteristics</div></div></li>',
+    '<div class="out-desc">One row per sample describing its characteristics as annotated in GEO — typically tissue type, disease status, treatment group, age, and similar fields. Use this to group or filter samples in downstream analyses.</div></div></li>',
     '<li><span class="out-num">3</span><div>',
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
     '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
     '</ul>',
     '<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--accent-subtle);border:1px solid var(--border);">',
     '<p style="font-size:13px;font-weight:600;color:var(--accent-text);margin-bottom:4px;">Next step</p>',
-    '<p style="font-size:13px;color:var(--text-2);line-height:1.55;">Download the script below, open it in RStudio, and update the <code style="font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">output_dir</code> variable at the top to point to your desired output folder. Then run the script — it will handle downloading the data from GEO, processing it, and writing the three files above.</p>',
+    '<p style="font-size:13px;color:var(--text-2);line-height:1.55;">Download the script below and open it in <strong>RStudio</strong>. At the top of the file, set the <code style="font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">output_dir</code> variable to the folder where you want the output files saved. Then click <strong>Source</strong> (or press Ctrl+Shift+Enter) to run it. The script will automatically install any missing R packages, download the data directly from GEO, process it, and write the three files above. You do not need to download any data manually.</p>',
     '</div>',
     '<p style="margin-top:10px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong> <span style="font-weight:400;font-size:12px;">(varies by machine speed and available RAM)</span></p>',
     '<div class="r-wrap">',
