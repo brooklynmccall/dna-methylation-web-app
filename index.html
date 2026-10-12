@@ -2193,7 +2193,9 @@ function showScript() {
 
   var runTime=runTimeEst(n,arr,useIdat);
   var fname=gse+'_normalize.R';
-  var methodStr=useIdat?('minfi <code>'+(arr==='27K'?'preprocessQuantile':'preprocessFunnorm')+'</code>'):'beta computation from signal table';
+  var scriptDesc=useIdat
+    ? 'This script downloads the raw IDAT files for <strong>'+esc(gse)+'</strong> from GEO, applies control-probe-based functional normalization, and computes beta values (0–1 methylation estimates) for every sample.'
+    : 'This script downloads the processed signal table for <strong>'+esc(gse)+'</strong> from GEO and computes beta values (β = Methylated ÷ (Methylated + Unmethylated + 100)) directly from the reported intensities.';
   var probeNote=n>0?('~ probes × '+n+' samples'):'probes × samples';
 
   var regionLabels = {
@@ -2211,7 +2213,7 @@ function showScript() {
       ' — rows: GEO accession IDs (e.g. GSM123456), columns: Entrez gene IDs';
   var geneLevelNote = methylNote;
   var html=[
-    '<p>Here\'s your R normalization script using '+methodStr+'. It outputs 3 files:</p>',
+    '<p>'+scriptDesc+' It produces 3 output files:</p>',
     '<ul class="out-list">',
     '<li><span class="out-num">1</span><div>',
     '<div class="out-fname">'+esc(gse+'_series_metadata.tsv')+'</div>',
@@ -2223,7 +2225,11 @@ function showScript() {
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
     '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
     '</ul>',
-    '<p style="margin-top:8px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong> <span style="font-weight:400;font-size:12px;">(varies by machine speed and available RAM)</span></p>',
+    '<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--accent-subtle);border:1px solid var(--border);">',
+    '<p style="font-size:13px;font-weight:600;color:var(--accent-text);margin-bottom:4px;">Next step</p>',
+    '<p style="font-size:13px;color:var(--text-2);line-height:1.55;">Download the script below, open it in RStudio, and update the <code style="font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">output_dir</code> variable at the top to point to your desired output folder. Then run the script — it will handle downloading the data from GEO, processing it, and writing the three files above.</p>',
+    '</div>',
+    '<p style="margin-top:10px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong> <span style="font-weight:400;font-size:12px;">(varies by machine speed and available RAM)</span></p>',
     '<div class="r-wrap">',
     '<div class="r-head">',
     '<span class="r-head-name">'+esc(fname)+'</span>',
