@@ -904,6 +904,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
   p('#           '+gse+'_methylation_values.tsv  ('+(betaLevel==='probe'?'probe-level':'gene-level')+')');
+  p('#           '+gse+'_qc_report.txt');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
@@ -925,6 +926,11 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('output_dir      <- getwd()        # change if needed');
   p('detect_p_thresh <- 0.01           # detection p-value cutoff');
   p('probe_fail_max  <- 0.05           # remove probes failing in >5% of samples');
+  p('sample_fail_max <- 0.05           # remove samples with >5% failed probes');
+  p('');
+  p('# Cross-reactive probe removal references:');
+  p('#   450K: Chen YA et al. (2013) Epigenetics 8:203-209');
+  p('#   EPIC: Pidsley R et al. (2016) Genome Biol 17:208');
   p('');
   p('# ── 3. Download supplementary IDAT files ──────────────────────────────');
   p('message("Downloading supplementary files from GEO (may take several minutes)...")');
@@ -948,18 +954,104 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('rgSet <- read.metharray.exp(base = idat_dir, force = TRUE)');
   p('message("Loaded ", ncol(rgSet), " samples, ", nrow(rgSet), " loci")');
   p('');
-  p('# ── 5. Detection p-values & QC ──────────────────────────────────────────');
+  p('# ── 5. Detection p-values & sample QC ─────────────────────────────────');
   p('message("Computing detection p-values...")');
   p('detP <- detectionP(rgSet)');
-  p('sample_fail <- colMeans(detP > detect_p_thresh)');
-  p('if (any(sample_fail > 0.25)) {');
-  p('  bad <- names(sample_fail)[sample_fail > 0.25]');
-  p('  warning(length(bad), " sample(s) with >25% failed probes: ", paste(bad, collapse=", "))');
+  p('');
+  p('# Initialise QC log — this becomes the _qc_report.txt output');
+  p('qc_log <- c(');
+  p('  paste0(rep("=", 70), collapse = ""),');
+  p('  paste0("QC Report for GEO series: ", gse_id),');
+  p('  paste0("Array type: '+arr+'"),');
+  p('  paste0("Report generated: ", Sys.time()),');
+  p('  paste0(rep("=", 70), collapse = ""),');
+  p('  "",');
+  p('  "--- Initial data dimensions ---",');
+  p('  paste0("  Samples: ", ncol(rgSet)),');
+  p('  paste0("  Probes:  ", nrow(rgSet)),');
+  p('  "")');
+  p('');
+  p('# ── Sample-level QC ──────────────────────────────────────────────────────');
+  p('qc_log <- c(qc_log, "--- Sample-level QC ---")');
+  p('sample_fail_rate <- colMeans(detP > detect_p_thresh)');
+  p('');
+  p('# Samples with >5% probes failing detection p-value: remove');
+  p('bad_samples <- names(sample_fail_rate)[sample_fail_rate > sample_fail_max]');
+  p('if (length(bad_samples) > 0) {');
+  p('  message("Removing ", length(bad_samples), " sample(s) with >", sample_fail_max*100,');
+  p('          "% failed probes: ", paste(bad_samples, collapse=", "))');
+  p('  rgSet <- rgSet[, !colnames(rgSet) %in% bad_samples]');
+  p('  detP  <- detP[,  !colnames(detP)  %in% bad_samples]');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Samples removed (>", sample_fail_max*100, "% probes failed detP): ",');
+  p('           length(bad_samples), " — ", paste(bad_samples, collapse=", ")))');
+  p('} else {');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Samples removed (>", sample_fail_max*100, "% probes failed detP): none"))');
   p('}');
+  p('');
+  p('# Samples with 1-5%: flag but keep');
+  p('borderline <- names(sample_fail_rate)[sample_fail_rate > 0.01 &');
+  p('                                       sample_fail_rate <= sample_fail_max]');
+  p('if (length(borderline) > 0) {');
+  p('  message("NOTE: ", length(borderline), " sample(s) with 1-", sample_fail_max*100,');
+  p('          "% failed probes (kept): ", paste(borderline, collapse=", "))');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Samples flagged (1-", sample_fail_max*100, "% probes failed, kept): ",');
+  p('           paste(borderline, collapse=", ")))');
+  p('} else {');
+  p('  qc_log <- c(qc_log, "  Samples flagged (1-5% probes failed): none")');
+  p('}');
+  p('');
+  p('qc_log <- c(qc_log, "")');
   p('');
   p('# ── 6. Normalize ───────────────────────────────────────────────────────');
   p('message("Normalizing with '+normFn+'...")');
   p('grSet <- '+normFn+'(rgSet)');
+  p('');
+  p('# ── 6b. Sex prediction ─────────────────────────────────────────────────');
+  p('# Predict sex from X/Y chromosome median intensities.');
+  p('# Done BEFORE sex-chromosome probe removal so chrX/chrY probes are available.');
+  p('message("Predicting sample sex from X/Y chromosome intensities...")');
+  p('qc_log <- c(qc_log, "--- Sex prediction ---")');
+  p('tryCatch({');
+  p('  pred_sex <- getSex(grSet, cutoff = -2)');
+  p('  sex_df   <- data.frame(');
+  p('    Sample    = rownames(pred_sex),');
+  p('    Predicted = pred_sex$predictedSex,');
+  p('    xMed      = round(pred_sex$xMed, 2),');
+  p('    yMed      = round(pred_sex$yMed, 2),');
+  p('    stringsAsFactors = FALSE)');
+  p('  sex_lines <- capture.output(print(sex_df, row.names = FALSE))');
+  p('  message(paste(sex_lines, collapse = "\\n"))');
+  p('  qc_log    <- c(qc_log, "  Predicted sex (X/Y median log2 intensities):", sex_lines)');
+  p('  pd_sex_col <- grep("^sex|gender|characteristics.*sex|sex.*characteristic",');
+  p('                     colnames(pData(grSet)), value = TRUE, ignore.case = TRUE)');
+  p('  if (length(pd_sex_col) > 0) {');
+  p('    pd_sex_col <- pd_sex_col[1]');
+  p('    rep_sex <- toupper(trimws(as.character(pData(grSet)[[pd_sex_col]])))');
+  p('    rep_sex <- ifelse(grepl("^F", rep_sex), "F",');
+  p('               ifelse(grepl("^M", rep_sex), "M", rep_sex))');
+  p('    mm <- which(pred_sex$predictedSex != rep_sex &');
+  p('                nchar(rep_sex) > 0 & !is.na(rep_sex))');
+  p('    if (length(mm) > 0) {');
+  p('      message("WARNING: Sex mismatch for ", length(mm), " sample(s):")');
+  p('      for (i in mm)');
+  p('        message("  ", rownames(pred_sex)[i], ": reported=", rep_sex[i],');
+  p('                ", predicted=", pred_sex$predictedSex[i])');
+  p('      qc_log <- c(qc_log, paste0("  Sex mismatches (reported vs predicted): ",');
+  p('        length(mm), " — ", paste(rownames(pred_sex)[mm], collapse = ", ")))');
+  p('    } else {');
+  p('      qc_log <- c(qc_log, "  Sex mismatches: none detected")');
+  p('    }');
+  p('  } else {');
+  p('    qc_log <- c(qc_log, "  No sex/gender column found in metadata — cross-check skipped")');
+  p('  }');
+  p('}, error = function(e) {');
+  p('  message("Sex prediction skipped: ", conditionMessage(e))');
+  p('  qc_log <<- c(qc_log, paste0("  Sex prediction skipped: ", conditionMessage(e)))');
+  p('})');
+  p('qc_log <- c(qc_log, "")');
   p('');
   p('# ── 7. Filter low-quality probes ────────────────────────────────────────');
   p('dp <- detP[match(featureNames(grSet), rownames(detP)),');
@@ -968,6 +1060,72 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('keep      <- fail_frac < probe_fail_max');
   p('message("Keeping ", sum(keep), " / ", length(keep), " probes after p-value filter")');
   p('grSet <- grSet[keep, ]');
+  p('');
+  p('qc_log <- c(qc_log, "--- Probe-level QC ---",');
+  p('  paste0("  Starting probes: ", nrow(rgSet)),');
+  p('  paste0("  Probes removed (detP > ", detect_p_thresh, " in >",');
+  p('         probe_fail_max*100, "% of samples): ", sum(!keep)),');
+  p('  paste0("  Probes remaining after detection p-value filter: ", sum(keep)))');
+  p('');
+  p('# ── 7b. Bead count filter (IDAT only) ──────────────────────────────────');
+  p('message("Applying bead count filter...")');
+  p('tryCatch({');
+  p('  bc <- beadcount(rgSet)');
+  p('  bc_sub <- bc[featureNames(grSet), sampleNames(grSet), drop = FALSE]');
+  p('  bc_fail_frac <- rowMeans(bc_sub < 3, na.rm = TRUE)');
+  p('  bc_keep <- bc_fail_frac < probe_fail_max');
+  p('  message("Bead count filter: removing ", sum(!bc_keep),');
+  p('          " probes with <3 beads in >", probe_fail_max*100, "% of samples")');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Probes removed (bead count <3 in >", probe_fail_max*100,');
+  p('           "% of samples): ", sum(!bc_keep)))');
+  p('  grSet <- grSet[bc_keep, ]');
+  p('}, error = function(e) {');
+  p('  message("Bead count filter skipped: ", conditionMessage(e))');
+  p('  qc_log <<- c(qc_log, paste0("  Bead count filter: skipped — ", conditionMessage(e)))');
+  p('})');
+  p('');
+  p('# ── 7c. Cross-reactive probe removal ────────────────────────────────────');
+  p('message("Downloading cross-reactive probe list...")');
+  p('tryCatch({');
+  p('  cr_url <- if (grepl("EPIC", "'+arr+'")) {');
+  p('    "https://raw.githubusercontent.com/sirselim/illumina_array_probe_qc/master/EPIC/13059_2016_1066_MOESM1_ESM.csv"');
+  p('  } else {');
+  p('    "https://raw.githubusercontent.com/sirselim/illumina_array_probe_qc/master/HM450/48639-non-specific-probes-Illumina450k.csv"');
+  p('  }');
+  p('  cr_data   <- read.csv(url(cr_url), stringsAsFactors = FALSE)');
+  p('  cr_probes <- cr_data[[1]]');
+  p('  cr_keep   <- !featureNames(grSet) %in% cr_probes');
+  p('  cr_removed <- sum(!cr_keep)');
+  p('  message("Cross-reactive probe removal: ", cr_removed, " probes removed")');
+  p('  grSet <- grSet[cr_keep, ]');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Cross-reactive probes removed (Chen 2013 / Pidsley 2016): ", cr_removed))');
+  p('}, error = function(e) {');
+  p('  message("Cross-reactive probe removal skipped (download failed): ", conditionMessage(e))');
+  p('  qc_log <<- c(qc_log,');
+  p('    paste0("  Cross-reactive probe removal: skipped — ", conditionMessage(e)))');
+  p('})');
+  p('');
+  p('# ── 7d. SNP probe removal ────────────────────────────────────────────────');
+  p('n_before_snp <- nrow(grSet)');
+  p('grSet <- dropLociWithSnps(grSet, snps = c("SBE", "CpG"), maf = 0)');
+  p('snp_removed <- n_before_snp - nrow(grSet)');
+  p('message("SNP probe removal: ", snp_removed, " probes removed (SNP at CpG or SBE, any MAF)")');
+  p('qc_log <- c(qc_log,');
+  p('  paste0("  Probes removed (SNP at CpG or single-base extension, any MAF): ",');
+  p('         snp_removed))');
+  p('');
+  p('# ── 7e. Sex chromosome probe removal ────────────────────────────────────');
+  p('anno_filt <- as.data.frame(getAnnotation(grSet))');
+  p('sex_chr   <- rownames(anno_filt)[anno_filt$chr %in% c("chrX", "chrY")]');
+  p('sex_removed <- length(sex_chr)');
+  p('grSet <- grSet[!featureNames(grSet) %in% sex_chr, ]');
+  p('message("Sex chromosome removal: ", sex_removed, " probes removed (chrX/chrY)")');
+  p('qc_log <- c(qc_log,');
+  p('  paste0("  Probes removed (sex chromosomes chrX/chrY): ", sex_removed),');
+  p('  paste0("  Probes remaining after all filters: ", nrow(grSet)),');
+  p('  "")');
   p('');
   p('# ── 8. Extract beta values ─────────────────────────────────────────────');
   p('message("Extracting beta values...")');
@@ -1064,6 +1222,24 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('message("Samples (", ncol(beta_mat), "): ", paste(head(colnames(beta_mat), 3), collapse=", "),');
   p('        if(ncol(beta_mat)>3) paste0(" ... (", ncol(beta_mat)-3, " more)") else "")');
   p('');
+  p('# ── 9b. Write QC report ────────────────────────────────────────────────');
+  p('qc_log <- c(qc_log, "--- Final data dimensions ---",');
+  p('  paste0("  Final samples: ", ncol(grSet)),');
+  p('  paste0("  Final probes:  ", nrow(grSet)),');
+  p('  "",');
+  p('  "Notes:",');
+  p('  "  Beta values computed from Funnorm/Quantile normalized intensities.",');
+  p('  "  Sex chromosome probes removed prior to output.",');
+  p('  "  Probes flagged by detP, bead count, cross-reactivity, or SNP content removed.",');
+  p('  "",');
+  p('  "Citations:",');
+  p('  "  Fortin JP et al. (2014) Genome Biol 15:503 — Funnorm normalization",');
+  p('  "  Chen YA et al. (2013) Epigenetics 8:203 — 450K cross-reactive probes",');
+  p('  "  Pidsley R et al. (2016) Genome Biol 17:208 — EPIC cross-reactive probes")');
+  p('qc_report_path <- file.path(output_dir, paste0(gse_id, "_qc_report.txt"))');
+  p('writeLines(qc_log, qc_report_path)');
+  p('message("QC report written: ", basename(qc_report_path))');
+  p('');
   p('# ── 10. Write series & sample metadata ────────────────────────────────────');
   p('message("Writing metadata files to: ", output_dir)');
   p('');
@@ -1087,6 +1263,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
     p('message("  ", gse_id, "_sample_metadata.tsv")');
     p('message("  ", gse_id, "_methylation_values.tsv  (",');
     p('        nrow(beta_mat), " probes x ", ncol(beta_mat), " samples)")');
+    p('message("  ", gse_id, "_qc_report.txt")');
     return L.join('\n');
   }
   // ── Gene-level aggregation block ──
@@ -1195,6 +1372,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
   p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " Entrez IDs)")');
+  p('message("  ", gse_id, "_qc_report.txt")');
   return L.join('\n');
 }
 
@@ -1215,6 +1393,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('# Outputs:  '+gse+'_series_metadata.tsv');
   p('#           '+gse+'_sample_metadata.tsv');
   p('#           '+gse+'_methylation_values.tsv  ('+(betaLevel==='probe'?'probe-level':'gene-level')+')');
+  p('#           '+gse+'_qc_report.txt');
   p('# ═══════════════════════════════════════════════════════════════════');
   p('');
   p('# ── 1. Packages ──────────────────────────────────────────────────────────');
@@ -1237,6 +1416,10 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('detect_p_thresh <- 0.01   # p-value threshold — probes above this are set to NA');
   p('probe_fail_max  <- 0.05   # remove probes with NA in >5% of samples');
   p('offset          <- 100    # Illumina beta offset: β = Meth / (Meth + Unmeth + offset)');
+  p('');
+  p('# Cross-reactive probe removal references:');
+  p('#   450K: Chen YA et al. (2013) Epigenetics 8:203-209');
+  p('#   EPIC: Pidsley R et al. (2016) Genome Biol 17:208');
   p('');
   p('# ── 3. Download supplementary files ─────────────────────────────────────');
   p('message("Downloading supplementary files from GEO...")');
@@ -1398,24 +1581,102 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('        " mean=", round(mean(beta_mat, na.rm=TRUE), 3),');
     p('        " max=", round(max(beta_mat, na.rm=TRUE), 3))');
     p('');
+    p('# Initialise QC log — this becomes the _qc_report.txt output');
+    p('qc_log <- c(');
+    p('  paste0(rep("=", 70), collapse = ""),');
+    p('  paste0("QC Report for GEO series: ", gse_id),');
+    p('  paste0("Array type: '+arr+'"),');
+    p('  paste0("Report generated: ", Sys.time()),');
+    p('  paste0(rep("=", 70), collapse = ""),');
+    p('  "",');
+    p('  "--- Initial data dimensions ---",');
+    p('  paste0("  Samples: ", ncol(beta_mat)),');
+    p('  paste0("  Probes:  ", nrow(beta_mat)),');
+    p('  "",');
+    p('  "--- Probe-level QC ---")');
+    p('');
     p('# ── 6. Detection p-value filter ──────────────────────────────────────────');
     p('if (!is.null(detP_mat) && ncol(detP_mat) == ncol(beta_mat)) {');
     p('  message("Applying detection p-value filter (threshold = ", detect_p_thresh, ")...")');
     p('  detP_num <- suppressWarnings(apply(detP_mat, 2, as.numeric))');
     p('  rownames(detP_num) <- probe_ids');
+    p('  n_before_detp <- nrow(beta_mat)');
     p('  failed    <- detP_num > detect_p_thresh');
     p('  beta_mat[failed] <- NA');
     p('  fail_frac <- rowMeans(is.na(beta_mat))');
     p('  keep      <- fail_frac < probe_fail_max');
     p('  message("Keeping ", sum(keep), " / ", length(keep), " probes")');
     p('  beta_mat  <- beta_mat[keep, , drop = FALSE]');
+    p('  qc_log <- c(qc_log,');
+    p('    paste0("  Probes removed (detP > ", detect_p_thresh, " in >",');
+    p('           probe_fail_max*100, "% of samples): ", n_before_detp - sum(keep)),');
+    p('    paste0("  Probes remaining after detection p-value filter: ", sum(keep)))');
     p('} else {');
     p('  message("No detection p-value columns found — skipping p-value filter.")');
+    p('  qc_log <- c(qc_log, "  Detection p-value filter: skipped (no detP columns in file)")');
     p('}');
   }
 
   p('');
-  p('# ── 6b. Normalization note ──────────────────────────────────────────────────');
+  p('');
+  p('# ── 6b. Cross-reactive probe removal ───────────────────────────────────');
+  p('message("Downloading cross-reactive probe list...")');
+  p('tryCatch({');
+  p('  cr_url <- if (grepl("EPIC", "'+arr+'")) {');
+  p('    "https://raw.githubusercontent.com/sirselim/illumina_array_probe_qc/master/EPIC/13059_2016_1066_MOESM1_ESM.csv"');
+  p('  } else {');
+  p('    "https://raw.githubusercontent.com/sirselim/illumina_array_probe_qc/master/HM450/48639-non-specific-probes-Illumina450k.csv"');
+  p('  }');
+  p('  cr_data   <- read.csv(url(cr_url), stringsAsFactors = FALSE)');
+  p('  cr_probes <- cr_data[[1]]');
+  p('  n_before_cr <- nrow(beta_mat)');
+  p('  beta_mat  <- beta_mat[!rownames(beta_mat) %in% cr_probes, , drop = FALSE]');
+  p('  cr_removed <- n_before_cr - nrow(beta_mat)');
+  p('  message("Cross-reactive probe removal: ", cr_removed, " probes removed")');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Cross-reactive probes removed (Chen 2013 / Pidsley 2016): ", cr_removed))');
+  p('}, error = function(e) {');
+  p('  message("Cross-reactive probe removal skipped: ", conditionMessage(e))');
+  p('  qc_log <<- c(qc_log,');
+  p('    paste0("  Cross-reactive probe removal: skipped — ", conditionMessage(e)))');
+  p('})');
+  p('');
+  p('# ── 6c. SNP probe removal ────────────────────────────────────────────────');
+  p('message("Removing probes with SNPs at CpG site or single-base extension...")');
+  p('tryCatch({');
+  p('  anno_snp  <- as.data.frame(getAnnotation("'+annotPkgSig+'"))');
+  p('  snp_mask  <- (!is.na(anno_snp$Probe_rs) | !is.na(anno_snp$CpG_rs) | !is.na(anno_snp$SBE_rs))');
+  p('  snp_probes <- rownames(anno_snp)[snp_mask]');
+  p('  n_before_snp <- nrow(beta_mat)');
+  p('  beta_mat <- beta_mat[!rownames(beta_mat) %in% snp_probes, , drop = FALSE]');
+  p('  snp_removed <- n_before_snp - nrow(beta_mat)');
+  p('  message("SNP probe removal: ", snp_removed, " probes removed")');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Probes removed (SNP at CpG or SBE, any MAF): ", snp_removed))');
+  p('}, error = function(e) {');
+  p('  message("SNP probe removal skipped: ", conditionMessage(e))');
+  p('  qc_log <<- c(qc_log, paste0("  SNP probe removal: skipped — ", conditionMessage(e)))');
+  p('})');
+  p('');
+  p('# ── 6d. Sex chromosome probe removal ───────────────────────────────────');
+  p('message("Removing sex chromosome probes (chrX, chrY)...")');
+  p('tryCatch({');
+  p('  anno_sex  <- as.data.frame(getAnnotation("'+annotPkgSig+'"))');
+  p('  sex_probes <- rownames(anno_sex)[anno_sex$chr %in% c("chrX", "chrY")]');
+  p('  n_before_sex <- nrow(beta_mat)');
+  p('  beta_mat  <- beta_mat[!rownames(beta_mat) %in% sex_probes, , drop = FALSE]');
+  p('  sex_removed <- n_before_sex - nrow(beta_mat)');
+  p('  message("Sex chromosome removal: ", sex_removed, " probes removed (chrX/chrY)")');
+  p('  qc_log <- c(qc_log,');
+  p('    paste0("  Probes removed (sex chromosomes chrX/chrY): ", sex_removed),');
+  p('    paste0("  Probes remaining after all filters: ", nrow(beta_mat)),');
+  p('    "")');
+  p('}, error = function(e) {');
+  p('  message("Sex chromosome probe removal skipped: ", conditionMessage(e))');
+  p('  qc_log <<- c(qc_log, paste0("  Sex chromosome removal: skipped — ", conditionMessage(e)))');
+  p('})');
+  p('');
+  p('# ── 6e. Normalization note ──────────────────────────────────────────────');
   p('# Full between-array quantile normalization (normalizeBetweenArrays) is NOT');
   p('# applied here. While the IDAT path uses preprocessFunnorm/preprocessQuantile,');
   p('# those methods normalize using control probes and/or a subset-quantile approach');
@@ -1519,6 +1780,24 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('message("Samples (", ncol(beta_mat), "): ", paste(head(colnames(beta_mat), 3), collapse=", "),');
   p('        if(ncol(beta_mat)>3) paste0(" ... (", ncol(beta_mat)-3, " more)") else "")');
   p('');
+  p('# ── 7b. Write QC report ────────────────────────────────────────────────');
+  p('qc_log <- c(qc_log, "--- Final data dimensions ---",');
+  p('  paste0("  Final samples: ", ncol(beta_mat)),');
+  p('  paste0("  Final probes:  ", nrow(beta_mat)),');
+  p('  "",');
+  p('  "Notes:",');
+  p('  "  Beta values computed as Meth / (Meth + Unmeth + 100) from signal table.",');
+  p('  "  No between-array normalization applied (see pipeline comments).",');
+  p('  "  Bead count filter not available from signal table data.",');
+  p('  "  Sex prediction not performed (requires raw IDAT files).",');
+  p('  "",');
+  p('  "Citations:",');
+  p('  "  Chen YA et al. (2013) Epigenetics 8:203 — 450K cross-reactive probes",');
+  p('  "  Pidsley R et al. (2016) Genome Biol 17:208 — EPIC cross-reactive probes")');
+  p('qc_report_path <- file.path(output_dir, paste0(gse_id, "_qc_report.txt"))');
+  p('writeLines(qc_log, qc_report_path)');
+  p('message("QC report written: ", basename(qc_report_path))');
+  p('');
   p('# ── 8. Write metadata files ────────────────────────────────────────────');
   p('message("Writing metadata files to: ", output_dir)');
   p('');
@@ -1542,6 +1821,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('message("  ", gse_id, "_sample_metadata.tsv")');
     p('message("  ", gse_id, "_methylation_values.tsv  (",');
     p('        nrow(beta_mat), " probes x ", ncol(beta_mat), " samples)")');
+    p('message("  ", gse_id, "_qc_report.txt")');
     return L.join('\n');
   }
   // ── Gene-level aggregation block (signal path) ──
@@ -1649,6 +1929,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
   p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " Entrez IDs)")');
+  p('message("  ", gse_id, "_qc_report.txt")');
   return L.join('\n');
 }
 
@@ -2212,8 +2493,11 @@ function showScript() {
       esc(regionLabels[S.regions]||'all annotated CpG probes')+
       ' mapped to that gene. Sample IDs are GEO accession codes (e.g. GSM123456).';
   var geneLevelNote = methylNote;
+  var qcNote=useIdat
+    ? 'A plain-text summary of every QC decision the script made — how many samples and probes were removed at each step and why. Use this to document your analysis or troubleshoot unexpected results.'
+    : 'A plain-text summary of probe-level QC steps applied — cross-reactive probe removal, SNP masking, and sex-chromosome probe removal. Bead count and sex prediction are not available from signal tables; those require raw IDAT files.';
   var html=[
-    '<p>'+scriptDesc+' It produces 3 output files:</p>',
+    '<p>'+scriptDesc+' It produces 4 output files:</p>',
     '<ul class="out-list">',
     '<li><span class="out-num">1</span><div>',
     '<div class="out-fname">'+esc(gse+'_series_metadata.tsv')+'</div>',
@@ -2224,10 +2508,13 @@ function showScript() {
     '<li><span class="out-num">3</span><div>',
     '<div class="out-fname">'+esc(gse+'_methylation_values.tsv')+'</div>',
     '<div class="out-desc">'+geneLevelNote+'</div></div></li>',
+    '<li><span class="out-num">4</span><div>',
+    '<div class="out-fname">'+esc(gse+'_qc_report.txt')+'</div>',
+    '<div class="out-desc">'+qcNote+'</div></div></li>',
     '</ul>',
     '<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--accent-subtle);border:1px solid var(--border);">',
     '<p style="font-size:13px;font-weight:600;color:var(--accent-text);margin-bottom:4px;">Next step</p>',
-    '<p style="font-size:13px;color:var(--text-2);line-height:1.55;">Download the script below and open it in <strong>RStudio</strong>. At the top of the file, set the <code style="font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">output_dir</code> variable to the folder where you want the output files saved. Then click <strong>Source</strong> (or press Ctrl+Shift+Enter) to run it. The script will automatically install any missing R packages, download the data directly from GEO, process it, and write the three files above. You do not need to download any data manually.</p>',
+    '<p style="font-size:13px;color:var(--text-2);line-height:1.55;">Download the script below and open it in <strong>RStudio</strong>. At the top of the file, set the <code style="font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">output_dir</code> variable to the folder where you want the output files saved. Then click <strong>Source</strong> (or press Ctrl+Shift+Enter) to run it. The script will automatically install any missing R packages, download the data directly from GEO, process it, and write the four files above. You do not need to download any data manually.</p>',
     '</div>',
     '<p style="margin-top:10px;font-size:13px;color:var(--text-2);">⏱ Estimated run time: <strong>'+esc(runTime)+'</strong> <span style="font-weight:400;font-size:12px;">(varies by machine speed and available RAM)</span></p>',
     '<div class="r-wrap">',
