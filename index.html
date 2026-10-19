@@ -951,7 +951,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('idat_dirs  <- table(dirname(idat_files))');
   p('idat_dir   <- names(idat_dirs)[which.max(idat_dirs)]');
   p('message("Reading IDATs from: ", idat_dir)');
-  p('rgSet <- read.metharray.exp(base = idat_dir, force = TRUE)');
+  p('rgSet <- read.metharray.exp(base = idat_dir, force = TRUE, extended = TRUE)');
   p('message("Loaded ", ncol(rgSet), " samples, ", nrow(rgSet), " loci")');
   p('');
   p('# ── 5. Detection p-values & sample QC ─────────────────────────────────');
