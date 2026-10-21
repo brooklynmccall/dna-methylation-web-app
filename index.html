@@ -1145,8 +1145,9 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('    )');
   p('  })');
   p('  cr_keep   <- !featureNames(grSet) %in% cr_probes');
-  p('  message("Cross-reactive probe removal: ", cr_removed, " probes removed")');
+  p('  cr_removed <- sum(!cr_keep)');
   p('  grSet <- grSet[cr_keep, ]');
+  p('  message("Cross-reactive probe removal: ", cr_removed, " probes removed")');
   p('  qc_log <- c(qc_log,');
   p('    paste0("  Cross-reactive probes removed (Chen 2013 / Pidsley 2016): ", cr_removed))');
   p('}, error = function(e) {');
@@ -2706,6 +2707,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v6</div>
+">v7</div>
 </body>
 </html>
