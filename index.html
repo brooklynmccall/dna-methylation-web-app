@@ -1052,17 +1052,32 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('# ── 7b. Bead count filter (IDAT only) ──────────────────────────────────');
   p('message("Applying bead count filter...")');
   p('tryCatch({');
-  p('  # beadcount() was removed in minfi >= 1.46; fall back to NBeads assay');
+  p('  # beadcount() removed in minfi >= 1.46; reconstruct per-CpG counts from NBeads + manifest');
   p('  bc <- if (exists("beadcount", envir = asNamespace("minfi"), inherits = FALSE)) {');
   p('    minfi::beadcount(rgSet)');
   p('  } else if ("NBeads" %in% assayNames(rgSet)) {');
-  p('    assay(rgSet, "NBeads")');
+  p('    # NBeads rows are probe addresses (numeric), not CpG IDs — map via manifest');
+  p('    nb   <- assay(rgSet, "NBeads")');
+  p('    mfst <- getManifest(rgSet)');
+  p('    pI   <- getProbeInfo(mfst, type = "I")   # Name, AddressA (M-chan), AddressB (U-chan)');
+  p('    pII  <- getProbeInfo(mfst, type = "II")  # Name, AddressA (single address)');
+  p('    # Type II probes: one address per CpG');
+  p('    ii_idx <- match(as.character(pII$AddressA), rownames(nb))');
+  p('    bc2    <- nb[ii_idx, , drop = FALSE]');
+  p('    rownames(bc2) <- pII$Name');
+  p('    # Type I probes: two addresses per CpG — take minimum (conservative)');
+  p('    ia_idx <- match(as.character(pI$AddressA), rownames(nb))');
+  p('    ib_idx <- match(as.character(pI$AddressB), rownames(nb))');
+  p('    bc1A   <- nb[ia_idx, , drop = FALSE]');
+  p('    bc1B   <- nb[ib_idx, , drop = FALSE]');
+  p('    rownames(bc1A) <- pI$Name');
+  p('    rownames(bc1B) <- pI$Name');
+  p('    bc1 <- pmin(bc1A, bc1B)');
+  p('    rbind(bc1, bc2)');
   p('  } else {');
   p('    stop("beadcount() not available in this minfi version and no NBeads assay found. ",');
   p('         "Re-load IDAT files with read.metharray.exp(extended=TRUE) for NBeads support.")');
   p('  }');
-  p('  # Use intersect() to avoid "subscript out of bounds" when NBeads rows/cols');
-  p('  # differ from grSet after Funnorm normalization');
   p('  fn_in_bc <- intersect(featureNames(grSet), rownames(bc))');
   p('  sn_in_bc <- intersect(sampleNames(grSet), colnames(bc))');
   p('  if (length(fn_in_bc) == 0 || length(sn_in_bc) == 0)');
@@ -2691,6 +2706,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v5</div>
+">v6</div>
 </body>
 </html>
