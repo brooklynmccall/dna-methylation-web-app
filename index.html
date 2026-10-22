@@ -951,7 +951,48 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('idat_dirs  <- table(dirname(idat_files))');
   p('idat_dir   <- names(idat_dirs)[which.max(idat_dirs)]');
   p('message("Reading IDATs from: ", idat_dir)');
-  p('rgSet <- read.metharray.exp(base = idat_dir, force = TRUE, extended = TRUE)');
+  p('');
+  p('# ── Patch illuminaio: handle RunInfo block-count overflow in old IDAT files ──');
+  p('# Some 450K IDAT files store nRunInfoBlocks as a signed 16-bit integer that');
+  p('# overflows to negative, crashing matrix(). RunInfo is scan metadata only —');
+  p('# NBeads and signal data are in the IlluminaDataTable block and unaffected.');
+  p('# This patch clamps the value to 0 so the overflow is silently ignored.');
+  p('local({');
+  p('  ns      <- asNamespace("illuminaio")');
+  p('  fn_name <- if (exists("readIDAT_nonenc",  envir = ns, inherits = FALSE)) "readIDAT_nonenc"');
+  p('             else if (exists(".readIDAT_nonenc", envir = ns, inherits = FALSE)) ".readIDAT_nonenc"');
+  p('             else NULL');
+  p('  if (is.null(fn_name)) {');
+  p('    message("illuminaio patch: readIDAT_nonenc not found — skipping"); return(invisible(NULL))');
+  p('  }');
+  p('  orig_fn <- get(fn_name, envir = ns, inherits = FALSE)');
+  p('  fn_txt  <- paste(deparse(orig_fn), collapse = "\n")');
+  p('  # Replace: matrix(naValue, nrow = nRunInfoBlocks,');
+  p('  #    with: matrix(naValue, nrow = max(0L, nRunInfoBlocks),');
+  p('  patched <- gsub(');
+  p('    "(matrix\\\\s*\\\\(\\\\s*naValue\\\\s*,\\\\s*nrow\\\\s*=\\\\s*)(nRunInfoBlocks)",');
+  p('    "\\\\1max(0L, \\\\2)", fn_txt, perl = TRUE)');
+  p('  if (identical(fn_txt, patched)) {');
+  p('    message("illuminaio patch: nRunInfoBlocks pattern not found (may be fixed in this version)")');
+  p('    return(invisible(NULL))');
+  p('  }');
+  p('  tryCatch({');
+  p('    pf <- eval(parse(text = patched))');
+  p('    environment(pf) <- environment(orig_fn)');
+  p('    utils::assignInNamespace(fn_name, pf, ns = "illuminaio")');
+  p('    message("illuminaio patched: nRunInfoBlocks overflow will be suppressed (NBeads unaffected)")');
+  p('  }, error = function(e) {');
+  p('    message("illuminaio patch failed (", conditionMessage(e), ") — will fall back to extended=FALSE")');
+  p('  })');
+  p('})');
+  p('');
+  p('rgSet <- tryCatch({');
+  p('  read.metharray.exp(base = idat_dir, force = TRUE, extended = TRUE)');
+  p('}, error = function(e) {');
+  p('  message("Warning: extended=TRUE failed (", conditionMessage(e), ")")') ;
+  p('  message("Retrying without extended mode (NBeads may still be available)")') ;
+  p('  read.metharray.exp(base = idat_dir, force = TRUE, extended = FALSE)');
+  p('})') ;
   p('message("Loaded ", ncol(rgSet), " samples, ", nrow(rgSet), " loci")');
   p('');
   p('# ── 5. Detection p-values & sample QC ─────────────────────────────────');
@@ -1075,8 +1116,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('    bc1 <- pmin(bc1A, bc1B)');
   p('    rbind(bc1, bc2)');
   p('  } else {');
-  p('    stop("beadcount() not available in this minfi version and no NBeads assay found. ",');
-  p('         "Re-load IDAT files with read.metharray.exp(extended=TRUE) for NBeads support.")');
+  p('    stop("NBeads not available — IDAT files were loaded without extended=TRUE (older array format)")');
   p('  }');
   p('  fn_in_bc <- intersect(featureNames(grSet), rownames(bc))');
   p('  sn_in_bc <- intersect(sampleNames(grSet), colnames(bc))');
@@ -2707,6 +2747,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v7</div>
+">v9</div>
 </body>
 </html>
