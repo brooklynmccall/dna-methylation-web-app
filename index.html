@@ -969,9 +969,11 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('  fn_txt  <- paste(deparse(orig_fn), collapse = "\n")');
   p('  # Replace: matrix(naValue, nrow = nRunInfoBlocks,');
   p('  #    with: matrix(naValue, nrow = max(0L, nRunInfoBlocks),');
+  p('  # Clamp nRunInfoBlocks at its assignment so matrix(), seq_len(), and any');
+  p('  # other downstream use all see a non-negative value.');
   p('  patched <- gsub(');
-  p('    "(matrix\\\\s*\\\\(\\\\s*naValue\\\\s*,\\\\s*nrow\\\\s*=\\\\s*)(nRunInfoBlocks)",');
-  p('    "\\\\1max(0L, \\\\2)", fn_txt, perl = TRUE)');
+  p('    "(nRunInfoBlocks\\\\s*<-\\\\s*[^\\\\n]+)",');
+  p('    "\\\\1\\nnRunInfoBlocks <- max(0L, nRunInfoBlocks)", fn_txt, perl = TRUE)');
   p('  if (identical(fn_txt, patched)) {');
   p('    message("illuminaio patch: nRunInfoBlocks pattern not found (may be fixed in this version)")');
   p('    return(invisible(NULL))');
@@ -2747,6 +2749,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v9</div>
+">v10</div>
 </body>
 </html>
