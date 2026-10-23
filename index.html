@@ -948,9 +948,22 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('# ── 4. Read IDAT files ─────────────────────────────────────────────────');
   p('idat_files <- list.files(gse_id, pattern = "\\\\.idat$", recursive = TRUE, full.names = TRUE)');
   p('if (length(idat_files) == 0) stop("No .idat files found in ", gse_id)');
-  p('idat_dirs  <- table(dirname(idat_files))');
-  p('idat_dir   <- names(idat_dirs)[which.max(idat_dirs)]');
-  p('message("Reading IDATs from: ", idat_dir)');
+  p('idat_dirs  <- unique(dirname(idat_files))');
+  p('if (length(idat_dirs) > 1) {');
+  p('  # IDATs are spread across per-chip subdirectories (common GEO packaging).');
+  p('  # Flatten into one directory so read.metharray.exp sees all samples.');
+  p('  flat_dir <- file.path(gse_id, "idat_flat")');
+  p('  dir.create(flat_dir, showWarnings = FALSE)');
+  p('  file.copy(idat_files, flat_dir, overwrite = FALSE)');
+  p('  idat_dir <- flat_dir');
+  p('  message("IDATs spread across ", length(idat_dirs), " subdirectories — flattened to: ", flat_dir)');
+  p('} else {');
+  p('  idat_dir <- idat_dirs[1]');
+  p('}');
+  p('message("Reading IDATs from: ", idat_dir, " (", length(list.files(idat_dir, pattern = "\\\\.idat$")), " files)")');
+  p('if (length(list.files(idat_dir, pattern = "\\\\.idat$")) == 0)');
+  p('  stop("idat_flat directory is empty — copy failed")');
+  p('n_samples_expected <- length(list.files(idat_dir, pattern = "\\\\.idat$")) %/% 2');
   p('');
   p('# ── Patch illuminaio: handle RunInfo block-count overflow in old IDAT files ──');
   p('# Some 450K IDAT files store nRunInfoBlocks as a signed 16-bit integer that');
@@ -2749,6 +2762,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v10</div>
+">v11</div>
 </body>
 </html>
