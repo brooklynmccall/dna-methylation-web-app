@@ -936,9 +936,29 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('message("Downloading supplementary files from GEO (may take several minutes)...")');
   p('getGEOSuppFiles(gse_id, makeDirectory = TRUE)');
   p('');
-  p('# Untar archives');
+  p('# Diagnostic: show what was downloaded');
+  p('dl_files <- list.files(gse_id, full.names = TRUE, recursive = FALSE)');
+  p('message("Files in ", gse_id, "/:")');
+  p('for (f in dl_files) message("  ", basename(f), "  (", round(file.info(f)$size/1e6, 1), " MB)")');
+  p('');
+  p('# Untar archives — with size check to catch partial downloads');
   p('tar_files <- list.files(gse_id, pattern = "\\\\.tar$", full.names = TRUE)');
-  p('for (f in tar_files) { message("Extracting: ", basename(f)); untar(f, exdir = gse_id) }');
+  p('if (length(tar_files) == 0) {');
+  p('  # RAW.tar not found — try direct NCBI FTP download');
+  p('  message("No .tar found via getGEOSuppFiles — attempting direct NCBI download...")');
+  p('  series_stub <- sub("(GSE[0-9]{1,3})[0-9]*", "\\\\1nnn", gse_id)');
+  p('  raw_url  <- paste0("https://ftp.ncbi.nlm.nih.gov/geo/series/", series_stub,');
+  p('                     "/", gse_id, "/suppl/", gse_id, "_RAW.tar")');
+  p('  raw_dest <- file.path(gse_id, paste0(gse_id, "_RAW.tar"))');
+  p('  download.file(raw_url, raw_dest, mode = "wb", method = "libcurl")');
+  p('  tar_files <- raw_dest');
+  p('}');
+  p('for (f in tar_files) {');
+  p('  sz <- file.info(f)$size');
+  p('  message("Extracting: ", basename(f), "  (", round(sz/1e6, 1), " MB)")');
+  p('  if (sz < 1e6) warning("TAR file looks very small (", sz, " bytes) — download may be incomplete")');
+  p('  untar(f, exdir = gse_id)');
+  p('}');
   p('');
   p('# Gunzip compressed IDAT files');
   p('gz_idats <- list.files(gse_id, pattern = "\\\\.idat\\\\.gz$",');
@@ -2762,6 +2782,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v11</div>
+">v12</div>
 </body>
 </html>
