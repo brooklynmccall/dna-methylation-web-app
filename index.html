@@ -446,7 +446,7 @@ function pushHistory(resumeFn) {
   if (_backNavig) return;
   historyStack.push({
     chatHtml: chatMessages.innerHTML,
-    s: { phase:S.phase, betaLevel:S.betaLevel, regions:S.regions, aggFunc:S.aggFunc, fileChoice:S.fileChoice },
+    s: { phase:S.phase, betaLevel:S.betaLevel, regions:S.regions, aggFunc:S.aggFunc, annotType:S.annotType, fileChoice:S.fileChoice },
     resume: resumeFn,
   });
 }
@@ -457,7 +457,7 @@ function goBack() {
   clearPanel();
   if (!historyStack.length) {
     // All the way back — unlock the GSE input
-    S.phase='IDLE'; S.betaLevel=null; S.regions=null; S.aggFunc=null; S.fileChoice=null;
+    S.phase='IDLE'; S.betaLevel=null; S.regions=null; S.aggFunc=null; S.annotType=null; S.fileChoice=null;
     chatStage.classList.remove('visible');
     setTimeout(function(){
       chatStage.classList.remove('show');
@@ -472,7 +472,7 @@ function goBack() {
   chatMessages.innerHTML = prev.chatHtml;
   S.phase = prev.s.phase; S.betaLevel = prev.s.betaLevel;
   S.regions = prev.s.regions; S.aggFunc = prev.s.aggFunc;
-  S.fileChoice = prev.s.fileChoice;
+  S.annotType = prev.s.annotType; S.fileChoice = prev.s.fileChoice;
   _backNavig = true;
   try { prev.resume(); } finally { _backNavig = false; }
   scrollBot();
@@ -1516,20 +1516,30 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
     p('rownames(gene_betas) <- all_genes');
   }
   p('');
-  p('# Map gene symbols to Entrez IDs');
-  p('message("  Mapping gene symbols to Entrez IDs...")');
-  p('entrez_map <- mapIds(org.Hs.eg.db,');
-  p('                     keys      = rownames(gene_betas),');
-  p('                     column    = "ENTREZID",');
-  p('                     keytype   = "SYMBOL",');
-  p('                     multiVals = "first")');
-  p('has_entrez <- !is.na(entrez_map)');
-  p('if (sum(!has_entrez) > 0)');
-  p('  message("  Dropped ", sum(!has_entrez), " genes with no Entrez ID mapping.")');
-  p('gene_betas           <- gene_betas[has_entrez, , drop = FALSE]');
-  p('rownames(gene_betas) <- entrez_map[has_entrez]');
+  var annotType = S.annotType || 'entrez';
+  if (annotType === 'symbol') {
+    p('# Keep gene symbols as row names (no ID mapping needed)');
+    p('message("  Using gene symbols as identifiers (", nrow(gene_betas), " genes)")');
+    p('id_label <- "gene_symbol"');
+  } else {
+    var annotCol   = annotType === 'ensembl' ? '"ENSEMBL"'   : '"ENTREZID"';
+    var annotLabel = annotType === 'ensembl' ? 'Ensembl IDs' : 'Entrez IDs';
+    p('# Map gene symbols to '+annotLabel);
+    p('message("  Mapping gene symbols to '+annotLabel+'...")');
+    p('id_map <- mapIds(org.Hs.eg.db,');
+    p('                 keys      = rownames(gene_betas),');
+    p('                 column    = '+annotCol+',');
+    p('                 keytype   = "SYMBOL",');
+    p('                 multiVals = "first")');
+    p('has_id <- !is.na(id_map)');
+    p('if (sum(!has_id) > 0)');
+    p('  message("  Dropped ", sum(!has_id), " genes with no '+annotLabel+' mapping.")');
+    p('gene_betas           <- gene_betas[has_id, , drop = FALSE]');
+    p('rownames(gene_betas) <- id_map[has_id]');
+    p('id_label <- "'+annotLabel.toLowerCase().replace(/ /g,'_')+'"');
+  }
   p('');
-  p('# Transpose to tidy format: samples as rows, Entrez IDs as columns');
+  p('# Transpose to tidy format: samples as rows, gene IDs as columns');
   p('gene_t   <- as.data.frame(t(gene_betas), check.names = FALSE, stringsAsFactors = FALSE)');
   p('gene_out <- cbind(GEO_Accession = rownames(gene_t), gene_t)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
@@ -1539,7 +1549,7 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('message("  ", gse_id, "_series_metadata.tsv")');
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
-  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " Entrez IDs)")');
+  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " ", id_label, ")")');
   p('message("  ", gse_id, "_qc_report.txt")');
   return L.join('\n');
 }
@@ -2107,20 +2117,30 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('rownames(gene_betas) <- all_genes');
   }
   p('');
-  p('# Map gene symbols to Entrez IDs');
-  p('message("  Mapping gene symbols to Entrez IDs...")');
-  p('entrez_map <- mapIds(org.Hs.eg.db,');
-  p('                     keys      = rownames(gene_betas),');
-  p('                     column    = "ENTREZID",');
-  p('                     keytype   = "SYMBOL",');
-  p('                     multiVals = "first")');
-  p('has_entrez <- !is.na(entrez_map)');
-  p('if (sum(!has_entrez) > 0)');
-  p('  message("  Dropped ", sum(!has_entrez), " genes with no Entrez ID mapping.")');
-  p('gene_betas           <- gene_betas[has_entrez, , drop = FALSE]');
-  p('rownames(gene_betas) <- entrez_map[has_entrez]');
+  var annotTypeSig = S.annotType || 'entrez';
+  if (annotTypeSig === 'symbol') {
+    p('# Keep gene symbols as row names (no ID mapping needed)');
+    p('message("  Using gene symbols as identifiers (", nrow(gene_betas), " genes)")');
+    p('id_label <- "gene_symbol"');
+  } else {
+    var annotColSig   = annotTypeSig === 'ensembl' ? '"ENSEMBL"'   : '"ENTREZID"';
+    var annotLabelSig = annotTypeSig === 'ensembl' ? 'Ensembl IDs' : 'Entrez IDs';
+    p('# Map gene symbols to '+annotLabelSig);
+    p('message("  Mapping gene symbols to '+annotLabelSig+'...")');
+    p('id_map <- mapIds(org.Hs.eg.db,');
+    p('                 keys      = rownames(gene_betas),');
+    p('                 column    = '+annotColSig+',');
+    p('                 keytype   = "SYMBOL",');
+    p('                 multiVals = "first")');
+    p('has_id <- !is.na(id_map)');
+    p('if (sum(!has_id) > 0)');
+    p('  message("  Dropped ", sum(!has_id), " genes with no '+annotLabelSig+' mapping.")');
+    p('gene_betas           <- gene_betas[has_id, , drop = FALSE]');
+    p('rownames(gene_betas) <- id_map[has_id]');
+    p('id_label <- "'+annotLabelSig.toLowerCase().replace(/ /g,'_')+'"');
+  }
   p('');
-  p('# Transpose to tidy format: samples as rows, Entrez IDs as columns');
+  p('# Transpose to tidy format: samples as rows, gene IDs as columns');
   p('gene_t   <- as.data.frame(t(gene_betas), check.names = FALSE, stringsAsFactors = FALSE)');
   p('gene_out <- cbind(GEO_Accession = rownames(gene_t), gene_t)');
   p('write.table(gene_out, sep = "\\t", row.names = FALSE, quote = FALSE,');
@@ -2130,7 +2150,7 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
   p('message("  ", gse_id, "_series_metadata.tsv")');
   p('message("  ", gse_id, "_sample_metadata.tsv")');
   p('message("  ", gse_id, "_methylation_values.tsv  (",');
-  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " Entrez IDs)")');
+  p('        ncol(gene_betas), " samples x ", nrow(gene_betas), " ", id_label, ")")');
   p('message("  ", gse_id, "_qc_report.txt")');
   return L.join('\n');
 }
@@ -2151,7 +2171,7 @@ function doStartOver() {
   historyStack=[];
   S={phase:'IDLE',gseId:null,ncbiMeta:null,matMeta:null,
      signalFile:null,signalFmt:null,fileChoice:null,rScript:null,
-     regions:null,aggFunc:null,betaLevel:null,dirFiles:[],sigCandidates:[],
+     regions:null,aggFunc:null,annotType:null,betaLevel:null,dirFiles:[],sigCandidates:[],
      cachedMatrixLines:null,cachedSigLines:null};
   // Hide chat, unlock input
   chatStage.classList.remove('visible');
@@ -2656,9 +2676,45 @@ function onAskAggFunc() {
 
 function onAggFuncChoice(func) {
   S.aggFunc = func;
-  S.phase = 'DONE';
   var labels = { mean: 'Mean', median: 'Median', pc1: 'First principal component (PC1)' };
   addMsg('user', labels[func] || func);
+  clearPanel();
+  setTimeout(function() { onAskAnnotationType(); }, 400);
+}
+
+function onAskAnnotationType() {
+  pushHistory(onAskAnnotationType);
+  S.phase = 'ASK_ANNOT_TYPE';
+  addMsg('system',
+    '<p>Which <strong>gene identifier</strong> should be used as row names in the output? ' +
+    'Identifiers appear as column headers in the output file — one column per gene.</p>');
+  showOptCards([
+    {
+      label: 'Entrez IDs',
+      tag: 'Recommended',
+      recommended: true,
+      desc: 'Stable numeric identifiers assigned by NCBI (e.g. 7157 for TP53). The standard input for most Bioconductor packages — limma, DESeq2, clusterProfiler, GSEA — and the safest choice for downstream enrichment analysis and cross-database queries. Not human-readable on their own, but trivially mapped back to gene names at any point.',
+      fn: function() { onAnnotationChoice('entrez'); }
+    },
+    {
+      label: 'Ensembl IDs',
+      desc: 'Versioned identifiers from the Ensembl genome browser (e.g. ENSG00000141510 for TP53). Tied to specific Ensembl gene models and widely used in RNA-seq pipelines and reference databases such as GENCODE. Useful when you plan to integrate with RNA-seq data aligned to an Ensembl reference. Note: version numbers (ENSG…v14) can cause mismatches between releases, and some older R packages expect Entrez IDs rather than Ensembl.',
+      fn: function() { onAnnotationChoice('ensembl'); }
+    },
+    {
+      label: 'Gene symbols',
+      desc: 'Human-readable names (e.g. TP53, BRCA1, GAPDH). Easy to interpret directly and convenient for reporting and figure labels. However, symbols are not stable — they are updated or retired over time, can differ between species, and the same symbol can occasionally map to more than one Entrez ID. Best suited for exploratory work or when human readability matters more than long-term reproducibility.',
+      fn: function() { onAnnotationChoice('symbol'); }
+    },
+  ]);
+  addBackBtn();
+}
+
+function onAnnotationChoice(type) {
+  S.annotType = type;
+  S.phase = 'DONE';
+  var labels = { entrez: 'Entrez IDs', ensembl: 'Ensembl IDs', symbol: 'Gene symbols' };
+  addMsg('user', labels[type] || type);
   var ty = addTyping(); clearPanel();
   setTimeout(function() { ty.remove(); showScript(); }, 700);
 }
@@ -2782,6 +2838,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v12</div>
+">v13</div>
 </body>
 </html>
