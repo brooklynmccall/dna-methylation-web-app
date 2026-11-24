@@ -1049,6 +1049,11 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('');
   p('# ── Sample-level QC ──────────────────────────────────────────────────────');
   p('qc_log <- c(qc_log, "--- Sample-level QC ---")');
+  p('sample_names_all <- sampleNames(rgSet)');
+  p('qc_log <- c(qc_log,');
+  p('  paste0("  Initial samples (", length(sample_names_all), "):"),');
+  p('  paste0("    ", sample_names_all))');
+  p('qc_log <- c(qc_log, "")');
   p('sample_fail_rate <- colMeans(detP > detect_p_thresh)');
   p('');
   p('# Samples with >5% probes failing detection p-value: remove');
@@ -1058,9 +1063,11 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('          "% failed probes: ", paste(bad_samples, collapse=", "))');
   p('  rgSet <- rgSet[, !colnames(rgSet) %in% bad_samples]');
   p('  detP  <- detP[,  !colnames(detP)  %in% bad_samples]');
+  p('  bad_lines <- sapply(bad_samples, function(s)');
+  p('    paste0("    ", s, "  (", round(sample_fail_rate[s]*100, 1), "% probes failed)"))');
   p('  qc_log <- c(qc_log,');
-  p('    paste0("  Samples removed (>", sample_fail_max*100, "% probes failed detP): ",');
-  p('           length(bad_samples), " — ", paste(bad_samples, collapse=", ")))');
+  p('    paste0("  Samples removed (>", sample_fail_max*100, "% probes failed detP): ", length(bad_samples)),');
+  p('    bad_lines)');
   p('} else {');
   p('  qc_log <- c(qc_log,');
   p('    paste0("  Samples removed (>", sample_fail_max*100, "% probes failed detP): none"))');
@@ -1072,14 +1079,18 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('if (length(borderline) > 0) {');
   p('  message("NOTE: ", length(borderline), " sample(s) with 1-", sample_fail_max*100,');
   p('          "% failed probes (kept): ", paste(borderline, collapse=", "))');
+  p('  flag_lines <- sapply(borderline, function(s)');
+  p('    paste0("    ", s, "  (", round(sample_fail_rate[s]*100, 1), "% probes failed — kept)"))');
   p('  qc_log <- c(qc_log,');
-  p('    paste0("  Samples flagged (1-", sample_fail_max*100, "% probes failed, kept): ",');
-  p('           paste(borderline, collapse=", ")))');
+  p('    paste0("  Samples flagged (1-", sample_fail_max*100, "% probes failed, kept): ", length(borderline)),');
+  p('    flag_lines)');
   p('} else {');
   p('  qc_log <- c(qc_log, "  Samples flagged (1-5% probes failed): none")');
   p('}');
   p('');
-  p('qc_log <- c(qc_log, "")');
+  p('qc_log <- c(qc_log,');
+  p('  paste0("  Samples remaining after QC: ", ncol(rgSet)),');
+  p('  "")');
   p('');
   p('# ── 6. Normalize ───────────────────────────────────────────────────────');
   p('message("Normalizing with '+normFn+'...")');
@@ -1254,6 +1265,21 @@ function buildIdatScript(gse,arr,n,regions,aggFunc,betaLevel) {
   p('# ── 8. Extract beta values ─────────────────────────────────────────────');
   p('message("Extracting beta values...")');
   p('beta_mat <- getBeta(grSet)');
+  p('');
+  p('# ── Cell-level masking ─────────────────────────────────────────────────');
+  p('# A probe that passed the row-wise detP filter may still have unreliable');
+  p('# measurements in individual samples (those samples passed sample-level QC');
+  p('# overall, but this specific probe failed detP for them). Without masking,');
+  p('# those values silently enter gene-level averages. Mask them → NA here so');
+  p('# the na.rm=TRUE in the aggregation step excludes them automatically.');
+  p('dp_cell <- detP[match(rownames(beta_mat), rownames(detP)),');
+  p('               match(colnames(beta_mat), colnames(detP)), drop = FALSE]');
+  p('n_masked_cell <- sum(dp_cell > detect_p_thresh, na.rm = TRUE)');
+  p('beta_mat[dp_cell > detect_p_thresh] <- NA');
+  p('message("Cell-level masking: ", n_masked_cell, " probe\\u00d7sample values \\u2192 NA (detP > ", detect_p_thresh, ")")');
+  p('qc_log <- c(qc_log, paste0("  Cell-level masking: ", n_masked_cell,');
+  p('  " individual probe\\u00d7sample values set to NA (detP > ", detect_p_thresh, ")"))');
+  p('');
   p('message("Beta value range check: min=", round(min(beta_mat, na.rm=TRUE), 3),');
   p('        " mean=", round(mean(beta_mat, na.rm=TRUE), 3),');
   p('        " max=", round(max(beta_mat, na.rm=TRUE), 3))');
@@ -1770,6 +1796,9 @@ function buildSigScript(gse,arr,fmt,sigFile,n,regions,aggFunc,betaLevel) {
     p('  "--- Initial data dimensions ---",');
     p('  paste0("  Samples: ", ncol(beta_mat)),');
     p('  paste0("  Probes:  ", nrow(beta_mat)),');
+    p('  "",');
+    p('  "--- Sample list ---",');
+    p('  paste0("  ", colnames(beta_mat)),');
     p('  "",');
     p('  "--- Probe-level QC ---")');
     p('');
@@ -2838,6 +2867,6 @@ function showScript() {
   pointer-events: none;
   z-index: 9999;
   letter-spacing: 0.02em;
-">v13</div>
+">v15</div>
 </body>
 </html>
